@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocial } from '../context/SocialContext';
 import {
@@ -14,14 +14,36 @@ import {
   Key,
   Unlock,
   Volume2,
+  BadgeCheck,
+  ExternalLink,
+  Clock,
+  Sparkles,
+  XCircle,
 } from 'lucide-react';
 import { compressImage } from '../utils/imageCompression';
+import { VerifiedBadge } from './VerifiedBadge';
 
 export const SettingsView: React.FC = () => {
   const { user, token, logout, updateProfile } = useAuth();
-  const { blockedUserIds, mutedUserIds, unblockUser, unmuteUser } = useSocial();
+  const { blockedUserIds, mutedUserIds, unblockUser, unmuteUser, setCurrentTab } = useSocial();
 
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'privacy' | 'security' | 'notifications'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'privacy' | 'security' | 'notifications' | 'verification'>('profile');
+
+  // Verification application state
+  const [verifStatus, setVerifStatus] = useState<{
+    isVerified: boolean;
+    verifiedCategory?: string;
+    verifiedAt?: number;
+    latestRequest?: any;
+  } | null>(null);
+  const [isLoadingVerif, setIsLoadingVerif] = useState(false);
+  const [verifCategory, setVerifCategory] = useState('Creator & Artist');
+  const [verifDocType, setVerifDocType] = useState('Official Website & Portfolio');
+  const [verifDocUrl, setVerifDocUrl] = useState('');
+  const [verifReason, setVerifReason] = useState('');
+  const [isSubmittingVerif, setIsSubmittingVerif] = useState(false);
+  const [verifSuccessMsg, setVerifSuccessMsg] = useState<string | null>(null);
+  const [verifErrorMsg, setVerifErrorMsg] = useState<string | null>(null);
 
   // Profile form state
   const [displayName, setDisplayName] = useState(user?.displayName || '');

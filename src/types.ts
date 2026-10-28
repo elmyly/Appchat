@@ -23,6 +23,10 @@ export interface User {
   mutedUsers?: string[];
   isPrivate?: boolean;
   role?: 'user' | 'admin';
+  isVerified?: boolean;
+  verifiedCategory?: string;
+  verifiedAt?: number;
+  isSuspended?: boolean;
   savedPostIds?: string[];
 }
 
@@ -124,11 +128,13 @@ export interface Post {
   authorUsername: string;
   authorDisplayName: string;
   authorAvatar: string;
+  authorIsVerified?: boolean;
   author?: {
     id: string;
     username: string;
     displayName: string;
     avatar: string;
+    isVerified?: boolean;
   };
   content: string;
   mediaUrls: string[];
@@ -161,6 +167,7 @@ export interface Comment {
   authorUsername: string;
   authorDisplayName: string;
   authorAvatar: string;
+  authorIsVerified?: boolean;
   content: string;
   likes: string[];
   replyToCommentId?: string;
@@ -244,6 +251,24 @@ export interface Report {
   details?: string;
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
   createdAt: number;
+}
+
+export interface VerificationRequest {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatar: string;
+  email: string;
+  category: string; // e.g. 'Creator', 'Journalist', 'Brand/Business', 'Public Figure', 'Developer'
+  documentType: string;
+  documentUrl?: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'denied';
+  adminNotes?: string;
+  createdAt: number;
+  reviewedAt?: number;
+  reviewedBy?: string;
 }
 
 export interface TrendingTopic {

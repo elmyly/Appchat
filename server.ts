@@ -331,7 +331,9 @@ app.post('/api/auth/verify-registration-otp', (req, res) => {
     blockedUsers: [],
     mutedUsers: [],
     isPrivate: false,
-    role: 'user',
+    role: (record.email === 'elmylypro@gmail.com' || record.username === 'malak') ? 'admin' : 'user',
+    isVerified: (record.email === 'elmylypro@gmail.com' || record.username === 'malak') ? true : false,
+    verifiedCategory: (record.email === 'elmylypro@gmail.com' || record.username === 'malak') ? 'Platform Administrator' : undefined,
     savedPostIds: [],
   };
 
@@ -422,7 +424,9 @@ app.post('/api/auth/register', (req, res) => {
     blockedUsers: [],
     mutedUsers: [],
     isPrivate: false,
-    role: 'user',
+    role: (cleanEmail === 'elmylypro@gmail.com' || cleanUsername === 'malak') ? 'admin' : 'user',
+    isVerified: (cleanEmail === 'elmylypro@gmail.com' || cleanUsername === 'malak') ? true : false,
+    verifiedCategory: (cleanEmail === 'elmylypro@gmail.com' || cleanUsername === 'malak') ? 'Platform Administrator' : undefined,
     savedPostIds: [],
   };
 
@@ -458,6 +462,12 @@ app.post('/api/auth/login', (req, res) => {
   const user = users.get(userId);
   if (!user || user.passwordHash !== hashPassword(password)) {
     return res.status(401).json({ error: 'Invalid username/email or password' });
+  }
+
+  if (user.email === 'elmylypro@gmail.com' || user.username === 'malak') {
+    user.role = 'admin';
+    user.isVerified = true;
+    if (!user.verifiedCategory) user.verifiedCategory = 'Platform Administrator';
   }
 
   const token = generateToken();
@@ -618,6 +628,13 @@ app.post('/api/auth/reset-password', (req, res) => {
 app.get('/api/auth/me', (req, res) => {
   const user = getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (user.email === 'elmylypro@gmail.com' || user.username === 'malak') {
+    user.role = 'admin';
+    user.isVerified = true;
+    if (!user.verifiedCategory) user.verifiedCategory = 'Platform Administrator';
+  }
+
   const { passwordHash: _, ...userSafe } = user;
   return res.json({ user: userSafe });
 });
