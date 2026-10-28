@@ -1,0 +1,11 @@
+{
+  "name": "Aura - Social Discovery & Encrypted Messenger",
+  "description": "Share your world, discover visual inspiration, and connect privately with Aura - combining social microblogging, visual mood boards, and encrypted messaging.",
+  "requestFramePermissions": [
+    "notifications",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
