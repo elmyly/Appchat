@@ -180,6 +180,51 @@ function generateToken(): string {
 
 // Helper send OTP Email via SMTP
 async function dispatchOtpEmail(toEmail: string, username: string, otp: string): Promise<{ sent: boolean; error?: string }> {
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+  const emailFrom = process.env.EMAIL_FROM?.trim() || process.env.GMAIL_USER?.trim();
+  const emailHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="display: inline-block; width: 48px; height: 48px; background: #5036FF; border-radius: 14px; line-height: 48px; color: #ffffff; font-weight: 800; font-size: 22px;">A</div>
+        <h1 style="color: #0f172a; font-size: 22px; font-weight: 800; margin: 16px 0 6px 0;">Verify your Aura account</h1>
+        <p style="color: #64748b; font-size: 14px; margin: 0;">Hi @${username}, enter the confirmation code below.</p>
+      </div>
+      <div style="text-align: center; margin: 28px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; font-weight: 700; margin-bottom: 8px;">6-Digit Verification Code</div>
+        <div style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #5036FF; font-family: ui-monospace, Menlo, monospace;">${otp}</div>
+      </div>
+      <p style="color: #64748b; font-size: 13px; text-align: center;">This code expires in 10 minutes.</p>
+    </div>`;
+
+  // Render-friendly delivery path: HTTPS APIs are more reliable than SMTP.
+  if (resendApiKey && emailFrom) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: emailFrom,
+          to: [toEmail],
+          subject: `Your Aura Verification Code: ${otp}`,
+          html: emailHtml,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend ${response.status}: ${errorText}`);
+      }
+      console.log(`[Auth OTP Resend] Verification code email sent to ${toEmail}`);
+      return { sent: true };
+    } catch (err: any) {
+      console.error('[Auth OTP Resend Error] Failed to send email:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
   const transporter = createGmailTransporter();
   if (transporter && process.env.GMAIL_USER) {
     try {
