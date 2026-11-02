@@ -489,6 +489,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
+    // System-wide administrator announcements
+    s.on('announcement:new', (data: { message: string }) => {
+      pushManager.triggerNotification({
+        title: 'Aura announcement',
+        body: data.message,
+      });
+    });
+
     // --- WebRTC Voice & Video Call Signaling Events ---
     s.on('call:incoming', (data: any) => {
       if (activeCallRef.current) {
