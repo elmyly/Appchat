@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { setupSocialRoutes, seedSocialData, ServerUser } from './src/server/socialRoutes';
+import { setupSocialRoutes, ServerUser } from './src/server/socialRoutes';
 import { setupDatingRoutes } from './src/server/datingRoutes';
 
 // Load environment variables with override so user-configured .env takes precedence
@@ -1046,14 +1046,6 @@ setupDatingRoutes(app, io, {
   conversations,
   messages,
   getAuthUser,
-});
-
-seedSocialData({
-  users,
-  usersByUsername,
-  usersByEmail,
-  conversations,
-  messages,
 });
 
 // --- Socket.IO Real-Time Handlers ---
