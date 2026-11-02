@@ -17,7 +17,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   const { activeConversation, selectConversation } = useSocket();
 
   return (
-    <div className="w-full h-full flex overflow-hidden bg-white select-none">
+    <div className="w-full h-full min-w-0 min-h-0 flex overflow-hidden bg-white select-none">
       {/* Pane 1: Conversations List */}
       <div
         className={`${
@@ -36,7 +36,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       <div
         className={`${
           !activeConversation ? 'hidden md:flex' : 'flex'
-        } flex-1 h-full min-w-0 bg-slate-50/60 flex-col overflow-hidden`}
+        } flex-1 h-full min-w-0 min-h-0 bg-slate-50/60 flex-col overflow-hidden`}
       >
         <ChatArea
           onBackToSidebar={() => selectConversation(null as any)}
