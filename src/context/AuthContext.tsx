@@ -37,9 +37,9 @@ interface AuthContextType {
     password?: string;
     bio?: string;
     avatar?: string;
-  }) => Promise<{ success: boolean; error?: string; devOtp?: string; emailSent?: boolean }>;
+  }) => Promise<{ success: boolean; error?: string; emailSent?: boolean }>;
   verifyRegistrationOtp: (email: string, otp: string) => Promise<boolean>;
-  resendRegistrationOtp: (email: string) => Promise<{ success: boolean; devOtp?: string; error?: string }>;
+  resendRegistrationOtp: (email: string) => Promise<{ success: boolean; error?: string }>;
   forgotPassword: (emailOrUsername: string) => Promise<ForgotPasswordResult>;
   verifyResetToken: (token: string) => Promise<{ valid: boolean; email?: string; username?: string; error?: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<ResetPasswordResult>;
@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password?: string;
     bio?: string;
     avatar?: string;
-  }): Promise<{ success: boolean; error?: string; devOtp?: string; emailSent?: boolean }> => {
+  }): Promise<{ success: boolean; error?: string; emailSent?: boolean }> => {
     setError(null);
     try {
       const res = await fetch('/api/auth/register-request', {
@@ -206,7 +206,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return {
         success: true,
-        devOtp: resData.devOtp,
         emailSent: resData.emailSent,
       };
     } catch (err: any) {
@@ -241,7 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resendRegistrationOtp = async (email: string): Promise<{ success: boolean; devOtp?: string; error?: string }> => {
+  const resendRegistrationOtp = async (email: string): Promise<{ success: boolean; error?: string }> => {
     setError(null);
     try {
       const res = await fetch('/api/auth/resend-registration-otp', {
@@ -255,7 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: resData.error || 'Failed to resend code' };
       }
 
-      return { success: true, devOtp: resData.devOtp };
+      return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Network error' };
     }
