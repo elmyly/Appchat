@@ -50,6 +50,16 @@ export const notifications: Map<string, Notification[]> = new Map(); // recipien
 export const reports: Map<string, Report> = new Map();
 export const verificationRequests: Map<string, VerificationRequest> = new Map();
 
+export interface SystemAnnouncement {
+  id: string;
+  message: string;
+  authorId: string;
+  authorDisplayName: string;
+  createdAt: number;
+}
+
+export const announcements: SystemAnnouncement[] = [];
+
 // Helper to extract hashtags from text
 function extractHashtags(text: string): string[] {
   const matches = text.match(/#([a-zA-Z0-9_]+)/g);
@@ -112,6 +122,43 @@ export function setupSocialRoutes(
   }
 ) {
   const { users, usersByUsername, getAuthUser } = context;
+
+  // --- SYSTEM ANNOUNCEMENTS ---
+  // Admin-only broadcast endpoint used by the admin dashboard. Announcements
+  // are kept in memory for the current server lifetime and delivered live via
+  // Socket.IO to every connected client.
+  app.get('/api/social/announcements', (_req, res) => {
+    return res.json({ announcements: announcements.slice(0, 50) });
+  });
+
+  app.post('/api/social/admin/announcement', (req, res) => {
+    const user = getAuthUser(req);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Administrator access required' });
+    }
+
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (!message) {
+      return res.status(400).json({ error: 'Announcement message is required' });
+    }
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Announcement must be 1000 characters or fewer' });
+    }
+
+    const announcement: SystemAnnouncement = {
+      id: 'announcement_' + crypto.randomUUID().slice(0, 8),
+      message,
+      authorId: user.id,
+      authorDisplayName: user.displayName,
+      createdAt: Date.now(),
+    };
+
+    announcements.unshift(announcement);
+    announcements.splice(50);
+    io.emit('announcement:new', announcement);
+
+    return res.status(201).json({ success: true, announcement });
+  });
 
   // --- POSTS ROUTES ---
 
@@ -2151,58 +2198,3 @@ export function seedSocialData(context: {
     },
   });
 
-  convMessages.set(convId, [
-    {
-      id: 'msg_init_1',
-      conversationId: convId,
-      senderId: 'user_kai',
-      senderUsername: 'kai',
-      senderDisplayName: 'Kai Tanaka',
-      senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      ciphertext: 'The new encrypted visual boards are ready to test. Check out the inspiration board!',
-      iv: 'dGVzdC1pdi0yMDI2',
-      keyFingerprint: 'AES-GCM-256',
-      type: 'text',
-      createdAt: Date.now() - 1000 * 60 * 30,
-      reactions: [{ emoji: '🔥', userId: 'user_malak', username: 'malak' }],
-      deliveredTo: ['user_malak', 'user_kai'],
-      readBy: [{ userId: 'user_malak', readAt: Date.now() - 1000 * 60 * 20 }],
-    },
-  ]);
-
-  // Seed Demo Verification Requests for Admin Testing
-  const demoReq1: VerificationRequest = {
-    id: 'req_kai_verification',
-    userId: 'user_kai',
-    username: 'kai',
-    displayName: 'Kai Tanaka',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    email: 'kai@aura.social',
-    category: 'Developer & Creative Technologist',
-    documentType: 'Official Website & GitHub Profile',
-    documentUrl: 'https://kaitanka.dev',
-    reason: 'Active contributor building open-source WebGL and cryptography modules for the platform with a significant public following.',
-    status: 'pending',
-    createdAt: Date.now() - 1000 * 60 * 60 * 5,
-  };
-  verificationRequests.set(demoReq1.id, demoReq1);
-
-  const demoReq2: VerificationRequest = {
-    id: 'req_elena_verification',
-    userId: 'user_elena',
-    username: 'elena',
-    displayName: 'Elena Vance',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    email: 'elena@aura.social',
-    category: 'Photographer & Visual Creator',
-    documentType: 'Photography Portfolio & Published Books',
-    documentUrl: 'https://elenavance.photo',
-    reason: 'International architectural photographer with exhibitions across Stockholm and Tokyo.',
-    status: 'approved',
-    adminNotes: 'Verified via published monographs and official domain ownership.',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 7,
-    reviewedAt: Date.now() - 1000 * 60 * 60 * 24 * 6,
-    reviewedBy: 'malak',
-  };
-  verificationRequests.set(demoReq2.id, demoReq2);
-}
