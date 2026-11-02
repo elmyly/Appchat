@@ -716,6 +716,26 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
       setTypingUsers((current) => [...current.filter((item) => item.userId !== 'user_elara'), elaraTyping]);
       try {
+        const wantsImage = /^(\/image|generate (an )?image|create (an )?image|draw )/i.test(text.trim());
+        if (wantsImage) {
+          const imageResponse = await fetch('/api/ai/elara/image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ prompt: text.replace(/^\/image\s*/i, '').trim() }),
+          });
+          if (imageResponse.ok) {
+            const { imageUrl } = await imageResponse.json();
+            const encryptedImage = await encryptMessage('[IMAGE]', activeConversation.id);
+            socket.emit('message:send', {
+              conversationId: activeConversation.id,
+              ...encryptedImage,
+              type: 'image',
+              aiReplyFor: 'user_elara',
+              fileMeta: { name: 'elara-generated-image.jpg', size: 0, mimeType: 'image/jpeg', dataUrl: imageUrl },
+            });
+          }
+          return;
+        }
         const aiResponse = await fetch('/api/ai/elara/reply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
