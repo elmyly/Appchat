@@ -1302,7 +1302,12 @@ io.on('connection', (socket) => {
       createdAt: now,
       reactions: [],
       deliveredTo,
-      readBy: [{ userId: authenticatedUserId, readAt: now }],
+      readBy: [
+        { userId: authenticatedUserId, readAt: now },
+        ...(conv.participantIds.includes('user_elara') && !aiReplyFor
+          ? [{ userId: 'user_elara', readAt: now }]
+          : []),
+      ],
     };
 
     if (!messages.has(conversationId)) {
