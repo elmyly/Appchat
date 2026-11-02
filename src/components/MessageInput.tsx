@@ -13,7 +13,7 @@ import { FileMeta } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 
 interface MessageInputProps {
-  onSendMessage: (text: string, type?: 'text' | 'image' | 'file' | 'audio', fileMeta?: FileMeta) => void;
+  onSendMessage: (text: string, type?: 'text' | 'image' | 'file' | 'audio', fileMeta?: FileMeta) => void | Promise<void>;
   onTyping: (isTyping: boolean) => void;
 }
 
@@ -31,6 +31,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyp
   const [text, setText] = useState('');
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [pendingFile, setPendingFile] = useState<{
     file: File;
     dataUrl: string;
@@ -93,11 +95,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyp
     e.target.value = ''; // Reset input
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed && !pendingFile) return;
 
     if (pendingFile) {
+      setIsUploading(true);
+      setUploadProgress(10);
       const type = pendingFile.isImage ? 'image' : 'file';
       const fileMeta: FileMeta = {
         name: pendingFile.file.name,
@@ -106,8 +110,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyp
         dataUrl: pendingFile.dataUrl,
       };
 
-      onSendMessage(trimmed || (pendingFile.isImage ? '[IMAGE]' : '[FILE]'), type, fileMeta);
+      // The file is sent as part of the encrypted message payload. Show
+      // visible progress while encryption/socket delivery completes.
+      const progressTimer = window.setInterval(() => {
+        setUploadProgress((current) => Math.min(current + 10, 90));
+      }, 120);
+      await onSendMessage(trimmed || (pendingFile.isImage ? '[IMAGE]' : '[FILE]'), type, fileMeta);
+      window.clearInterval(progressTimer);
+      setUploadProgress(100);
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
       setPendingFile(null);
+      setIsUploading(false);
+      setUploadProgress(0);
     } else {
       onSendMessage(trimmed, 'text');
     }
@@ -165,13 +179,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyp
                 {pendingFile.file.name}
               </span>
               <span className="text-[10px] text-slate-500 font-mono">
-                {(pendingFile.file.size / 1024).toFixed(1)} KB
+                {isUploading ? `Uploading image… ${uploadProgress}%` : `${(pendingFile.file.size / 1024).toFixed(1)} KB`}
               </span>
+              {isUploading && (
+                <div className="mt-1 h-1 w-32 overflow-hidden rounded-full bg-slate-200">
+                  <div className="h-full rounded-full bg-indigo-600 transition-all duration-100" style={{ width: `${uploadProgress}%` }} />
+                </div>
+              )}
             </div>
           </div>
           <button
             type="button"
             onClick={() => setPendingFile(null)}
+            disabled={isUploading}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -220,6 +240,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, onTyp
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
           className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer shrink-0"
           title="Attach Image or File"
         >
