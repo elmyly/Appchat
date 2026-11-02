@@ -441,6 +441,88 @@ app.post('/api/auth/register', (req, res) => {
   return res.json({ token, user: userSafe });
 });
 
+// 4. Google & Gmail Single Sign-On / Direct Authentication
+app.post(['/api/auth/google', '/api/auth/gmail'], (req, res) => {
+  const { email, displayName, avatar } = req.body;
+  if (!email || !String(email).trim()) {
+    return res.status(400).json({ error: 'Gmail address is required' });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address' });
+  }
+
+  // Look for existing user by email
+  let userId = usersByEmail.get(cleanEmail);
+  let user: User | undefined;
+
+  if (userId) {
+    user = users.get(userId);
+  } else {
+    // Generate clean unique username based on email prefix
+    const baseUsername = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() || 'creator';
+    let uniqueUsername = baseUsername;
+    let counter = 1;
+    while (usersByUsername.has(uniqueUsername)) {
+      uniqueUsername = `${baseUsername}${counter++}`;
+    }
+
+    const id = 'user_' + crypto.randomUUID().slice(0, 8);
+    const fingerprint = crypto.createHash('sha256').update(uniqueUsername + Date.now()).digest('hex').slice(0, 16).toUpperCase();
+
+    const newUser: User = {
+      id,
+      username: uniqueUsername,
+      email: cleanEmail,
+      displayName: (displayName || cleanEmail.split('@')[0]).trim(),
+      bio: 'Creative creator on Aura',
+      avatar: avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${uniqueUsername}&backgroundColor=e0e7ff`,
+      coverBanner: 'linear-gradient(135deg, #5036FF 0%, #8B5CF6 50%, #EC4899 100%)',
+      website: '',
+      location: '',
+      passwordHash: hashPassword(crypto.randomBytes(16).toString('hex')),
+      statusMessage: 'Signed in via Gmail 🚀',
+      publicKeyFingerprint: fingerprint,
+      createdAt: Date.now(),
+      lastSeen: Date.now(),
+      followers: [],
+      following: [],
+      blockedUsers: [],
+      mutedUsers: [],
+      isPrivate: false,
+      role: (cleanEmail === 'elmylypro@gmail.com' || uniqueUsername === 'malak') ? 'admin' : 'user',
+      isVerified: (cleanEmail === 'elmylypro@gmail.com' || uniqueUsername === 'malak') ? true : false,
+      verifiedCategory: (cleanEmail === 'elmylypro@gmail.com' || uniqueUsername === 'malak') ? 'Platform Administrator' : undefined,
+      savedPostIds: [],
+    };
+
+    users.set(id, newUser);
+    usersByUsername.set(uniqueUsername, id);
+    usersByEmail.set(cleanEmail, id);
+    user = newUser;
+  }
+
+  if (!user) {
+    return res.status(500).json({ error: 'Failed to authenticate Gmail user' });
+  }
+
+  // Ensure admin credentials for platform administrator
+  if (user.email === 'elmylypro@gmail.com' || user.username === 'malak') {
+    user.role = 'admin';
+    user.isVerified = true;
+    if (!user.verifiedCategory) user.verifiedCategory = 'Platform Administrator';
+  }
+
+  const token = generateToken();
+  sessions.set(token, user.id);
+
+  const { passwordHash: _, ...userSafe } = user;
+  return res.json({ token, user: userSafe, isNewUser: !userId });
+});
+
 // Login (supports both username and email)
 app.post('/api/auth/login', (req, res) => {
   const { username, password, email } = req.body;
@@ -671,12 +753,45 @@ app.put('/api/auth/profile', (req, res) => {
   return res.json({ user: userSafe });
 });
 
+// Helper to enrich a conversation object with participant metadata
+function enrichConversation(conv: Conversation, currentUserId: string) {
+  const participants = conv.participantIds.map((pId) => {
+    const u = users.get(pId);
+    const isOnline = (onlineUsers.get(pId)?.size || 0) > 0;
+    return u ? {
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      isOnline,
+      lastSeen: u.lastSeen,
+      publicKeyFingerprint: u.publicKeyFingerprint,
+    } : null;
+  }).filter(Boolean);
+
+  const convMessages = messages.get(conv.id) || [];
+  const lastMsg = convMessages[convMessages.length - 1];
+
+  const unreadCount = convMessages.filter((m) => {
+    if (m.senderId === currentUserId) return false;
+    return !m.readBy.some((r) => r.userId === currentUserId);
+  }).length;
+
+  return {
+    ...conv,
+    participants,
+    lastMessage: lastMsg || null,
+    unreadCount,
+  };
+}
+
 // Get all users or search by username
 app.get('/api/users/search', (req, res) => {
   const user = getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const query = (req.query.q as string || '').toLowerCase().trim();
+  const rawQ = (req.query.q as string || '').toLowerCase().trim();
+  const query = rawQ.replace(/^@/, '');
   const results: any[] = [];
 
   for (const u of users.values()) {
@@ -709,37 +824,7 @@ app.get('/api/conversations', (req, res) => {
 
   for (const conv of conversations.values()) {
     if (conv.participantIds.includes(user.id)) {
-      // Gather participant details
-      const participants = conv.participantIds.map((pId) => {
-        const u = users.get(pId);
-        const isOnline = (onlineUsers.get(pId)?.size || 0) > 0;
-        return u ? {
-          id: u.id,
-          username: u.username,
-          displayName: u.displayName,
-          avatar: u.avatar,
-          isOnline,
-          lastSeen: u.lastSeen,
-          publicKeyFingerprint: u.publicKeyFingerprint,
-        } : null;
-      }).filter(Boolean);
-
-      // Get latest message
-      const convMessages = messages.get(conv.id) || [];
-      const lastMsg = convMessages[convMessages.length - 1];
-
-      // Calculate unread count for current user
-      const unreadCount = convMessages.filter((m) => {
-        if (m.senderId === user.id) return false;
-        return !m.readBy.some((r) => r.userId === user.id);
-      }).length;
-
-      userConversations.push({
-        ...conv,
-        participants,
-        lastMessage: lastMsg || null,
-        unreadCount,
-      });
+      userConversations.push(enrichConversation(conv, user.id));
     }
   }
 
@@ -757,15 +842,36 @@ app.post('/api/conversations/direct', (req, res) => {
   const { targetUsername } = req.body;
   if (!targetUsername) return res.status(400).json({ error: 'Target username is required' });
 
-  const cleanTarget = targetUsername.trim().toLowerCase();
-  const targetId = usersByUsername.get(cleanTarget);
-  if (!targetId) return res.status(404).json({ error: 'User not found' });
-  if (targetId === user.id) return res.status(400).json({ error: 'Cannot start conversation with yourself' });
+  const cleanTarget = String(targetUsername).trim().toLowerCase().replace(/^@/, '');
+
+  let targetId = usersByUsername.get(cleanTarget);
+  if (!targetId && users.has(cleanTarget)) {
+    targetId = cleanTarget;
+  }
+  if (!targetId && usersByEmail.has(cleanTarget)) {
+    targetId = usersByEmail.get(cleanTarget);
+  }
+  if (!targetId) {
+    for (const u of users.values()) {
+      if (u.id === cleanTarget || u.username.toLowerCase() === cleanTarget || u.email.toLowerCase() === cleanTarget) {
+        targetId = u.id;
+        break;
+      }
+    }
+  }
+
+  if (!targetId) {
+    return res.status(404).json({ error: `User "@${cleanTarget}" not found in Aura directory` });
+  }
+
+  if (targetId === user.id) {
+    return res.status(400).json({ error: 'Cannot start conversation with yourself' });
+  }
 
   // Check if conversation already exists
   for (const conv of conversations.values()) {
     if (conv.type === 'direct' && conv.participantIds.includes(user.id) && conv.participantIds.includes(targetId)) {
-      return res.json({ conversation: conv });
+      return res.json({ conversation: enrichConversation(conv, user.id) });
     }
   }
 
@@ -786,10 +892,10 @@ app.post('/api/conversations/direct', (req, res) => {
 
   // Broadcast conversation to both users
   for (const pId of [user.id, targetId]) {
-    io.to(`user:${pId}`).emit('conversation:new', newConv);
+    io.to(`user:${pId}`).emit('conversation:new', enrichConversation(newConv, pId));
   }
 
-  return res.json({ conversation: newConv });
+  return res.json({ conversation: enrichConversation(newConv, user.id) });
 });
 
 // Create Group Conversation
@@ -803,7 +909,9 @@ app.post('/api/conversations/group', (req, res) => {
   const participantIds: string[] = [user.id];
   if (Array.isArray(memberUsernames)) {
     for (const m of memberUsernames) {
-      const uId = usersByUsername.get(m.trim().toLowerCase());
+      const cleanM = String(m).trim().toLowerCase().replace(/^@/, '');
+      let uId = usersByUsername.get(cleanM);
+      if (!uId && users.has(cleanM)) uId = cleanM;
       if (uId && !participantIds.includes(uId)) {
         participantIds.push(uId);
       }
@@ -829,10 +937,10 @@ app.post('/api/conversations/group', (req, res) => {
 
   // Broadcast to all participants
   for (const pId of participantIds) {
-    io.to(`user:${pId}`).emit('conversation:new', newGroup);
+    io.to(`user:${pId}`).emit('conversation:new', enrichConversation(newGroup, pId));
   }
 
-  return res.json({ conversation: newGroup });
+  return res.json({ conversation: enrichConversation(newGroup, user.id) });
 });
 
 // Update Group Details (avatar, name, description)
@@ -1270,6 +1378,110 @@ io.on('connection', (socket) => {
     io.to(`user:${targetId}`).emit('conversation:new', conv);
     io.to(`conversation:${conversationId}`).emit('conversation:updated', conv);
     io.to(`conversation:${conversationId}`).emit('message:new', sysMsg);
+  });
+
+  // --- WebRTC Voice Call Signaling ---
+  socket.on('call:initiate', (data: {
+    callId: string;
+    conversationId: string;
+    targetUserId: string;
+    caller: { id: string; username: string; displayName: string; avatar: string };
+    conversationName?: string;
+    offer?: any;
+  }) => {
+    if (!authenticatedUserId) return;
+    const targetUserId = data.targetUserId;
+    io.to(`user:${targetUserId}`).emit('call:incoming', {
+      ...data,
+      callerId: authenticatedUserId,
+    });
+  });
+
+  socket.on('call:accept', (data: {
+    callId: string;
+    conversationId: string;
+    callerId: string;
+    receiver: { id: string; username: string; displayName: string; avatar: string };
+    answer?: any;
+  }) => {
+    if (!authenticatedUserId) return;
+    io.to(`user:${data.callerId}`).emit('call:accepted', {
+      ...data,
+      acceptedBy: authenticatedUserId,
+    });
+  });
+
+  socket.on('call:reject', (data: {
+    callId: string;
+    conversationId: string;
+    callerId: string;
+    reason?: string;
+  }) => {
+    if (!authenticatedUserId) return;
+    io.to(`user:${data.callerId}`).emit('call:rejected', {
+      callId: data.callId,
+      reason: data.reason || 'declined',
+    });
+  });
+
+  socket.on('call:end', (data: {
+    callId: string;
+    conversationId: string;
+    targetUserId?: string;
+    duration?: number;
+  }) => {
+    if (!authenticatedUserId) return;
+    if (data.targetUserId) {
+      io.to(`user:${data.targetUserId}`).emit('call:ended', {
+        callId: data.callId,
+        endedBy: authenticatedUserId,
+        duration: data.duration,
+      });
+    }
+    if (data.conversationId) {
+      io.to(`conversation:${data.conversationId}`).emit('call:ended', {
+        callId: data.callId,
+        endedBy: authenticatedUserId,
+        duration: data.duration,
+      });
+    }
+  });
+
+  socket.on('call:signal', (data: {
+    callId: string;
+    targetUserId: string;
+    signal: any;
+  }) => {
+    if (!authenticatedUserId) return;
+    io.to(`user:${data.targetUserId}`).emit('call:signal', {
+      callId: data.callId,
+      senderId: authenticatedUserId,
+      signal: data.signal,
+    });
+  });
+
+  socket.on('call:busy', (data: {
+    callId: string;
+    callerId: string;
+  }) => {
+    if (!authenticatedUserId) return;
+    io.to(`user:${data.callerId}`).emit('call:busy', {
+      callId: data.callId,
+    });
+  });
+
+  socket.on('call:media_state', (data: {
+    callId: string;
+    targetUserId: string;
+    isCameraOff?: boolean;
+    isMuted?: boolean;
+    isScreenSharing?: boolean;
+  }) => {
+    if (!authenticatedUserId) return;
+    io.to(`user:${data.targetUserId}`).emit('call:media_state', {
+      ...data,
+      senderId: authenticatedUserId,
+    });
   });
 
   // Handle disconnect

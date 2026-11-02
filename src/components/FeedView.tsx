@@ -21,11 +21,18 @@ export const FeedView: React.FC<FeedViewProps> = ({ onOpenReport }) => {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-20 md:pb-6">
+    <div className="max-w-2xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-32 md:pb-12">
       {/* Top Header & Feed Selector Tabs */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md pt-2 pb-3 border-b border-slate-200/90 -mx-2 sm:-mx-4 px-4 sm:px-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">Home</h1>
+          <div className="flex items-center gap-2">
+            <img
+              src="/assets/aistudio/Interwoven_Purple_Blue_Ribbon_Logo_baa92702.png"
+              alt="Aura"
+              className="w-7 h-7 object-contain md:hidden drop-shadow-xs"
+            />
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">Home</h1>
+          </div>
         </div>
 
         {/* Segmented Feed Switcher */}

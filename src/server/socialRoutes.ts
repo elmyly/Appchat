@@ -1427,7 +1427,7 @@ export function setupSocialRoutes(
   // --- Verified Badge & Verification Management ---
 
   // Check Current User Verification Status
-  app.get('/api/social/verification/status', (req, res) => {
+  const handleVerificationStatus = (req: any, res: any) => {
     const user = getAuthUser(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -1441,10 +1441,12 @@ export function setupSocialRoutes(
       verifiedAt: user.verifiedAt || null,
       latestRequest: userRequests[0] || null,
     });
-  });
+  };
+  app.get('/api/social/verification/status', handleVerificationStatus);
+  app.get('/api/verification/status', handleVerificationStatus);
 
   // Submit Verified Badge Application
-  app.post('/api/social/verification/apply', (req, res) => {
+  const handleVerificationApply = (req: any, res: any) => {
     const user = getAuthUser(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -1459,7 +1461,7 @@ export function setupSocialRoutes(
       return res.status(400).json({ error: 'You already have an active verification request under review' });
     }
 
-    const { category, documentType, documentUrl, reason } = req.body;
+    const { category, documentType, documentUrl, documentFileName, documentFileSize, reason } = req.body;
     if (!category || !reason || !reason.trim()) {
       return res.status(400).json({ error: 'Category and explanation reason are required' });
     }
@@ -1475,6 +1477,8 @@ export function setupSocialRoutes(
       category: String(category).trim(),
       documentType: documentType || 'Online Presence & Official Links',
       documentUrl: documentUrl ? String(documentUrl).trim() : undefined,
+      documentFileName: documentFileName ? String(documentFileName).trim() : undefined,
+      documentFileSize: documentFileSize ? String(documentFileSize).trim() : undefined,
       reason: String(reason).trim(),
       status: 'pending',
       createdAt: Date.now(),
@@ -1491,7 +1495,9 @@ export function setupSocialRoutes(
 
     io.emit('admin:verification_new', newRequest);
     return res.json({ success: true, request: newRequest });
-  });
+  };
+  app.post('/api/social/verification/apply', handleVerificationApply);
+  app.post('/api/verification/apply', handleVerificationApply);
 
   // Admin: Get All Verification Requests
   app.get('/api/admin/verifications', (req, res) => {

@@ -63,7 +63,7 @@ export const VisualsView: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 space-y-4 pb-20 md:pb-6">
+    <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 space-y-4 pb-32 md:pb-12">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -75,16 +75,16 @@ export const VisualsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Search Bar */}
-          <div className="flex items-center gap-2 bg-slate-100/90 border border-slate-200/90 px-3 py-2 rounded-2xl focus-within:bg-white focus-within:border-[#5036FF] transition-all">
+          <div className="flex-1 sm:flex-initial flex items-center gap-2 bg-slate-100/90 border border-slate-200/90 px-3 py-2 rounded-2xl focus-within:bg-white focus-within:border-[#5036FF] transition-all">
             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search visuals & tags..."
-              className="bg-transparent border-0 text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-36 sm:w-48"
+              className="bg-transparent border-0 text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full sm:w-48"
             />
           </div>
 

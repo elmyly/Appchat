@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useSocket, SearchMessageResult } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { useSocial } from '../context/SocialContext';
 import { Conversation } from '../types';
 import { sounds } from '../lib/sounds';
 
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileChatOpen,
 }) => {
   const { user } = useAuth();
+  const { setCurrentTab, setViewingUsername } = useSocial();
   const {
     conversations,
     activeConversation,
@@ -392,7 +394,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <img
                           src={result.conversationAvatar}
                           alt=""
-                          className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
+                          onClick={(e) => {
+                            if (result.conversationType === 'direct') {
+                              e.stopPropagation();
+                              const targetConv = conversations.find((c) => c.id === result.conversationId);
+                              const other = targetConv?.participants?.find((p) => p.id !== user.id);
+                              if (other?.username) {
+                                setViewingUsername(other.username);
+                                setCurrentTab('profile');
+                              }
+                            }
+                          }}
+                          className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-slate-200 hover:ring-[#5036FF] cursor-pointer"
+                          title="Visit profile"
                         />
                         <span className="text-xs font-semibold text-indigo-700 truncate">
                           {result.conversationTitle}
@@ -508,12 +522,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'bg-white border-transparent hover:bg-slate-100/70 hover:border-slate-200/60 text-slate-700'
                     }`}
                   >
-                    {/* Avatar with real-time green online dot */}
-                    <div className="relative shrink-0">
+                    {/* Avatar with real-time green online dot - Click to visit profile */}
+                    <div
+                      onClick={(e) => {
+                        if (!isGroup && otherParticipant?.username) {
+                          e.stopPropagation();
+                          setViewingUsername(otherParticipant.username);
+                          setCurrentTab('profile');
+                        }
+                      }}
+                      className={`relative shrink-0 ${
+                        !isGroup && otherParticipant?.username
+                          ? 'cursor-pointer group/avatar'
+                          : ''
+                      }`}
+                      title={
+                        !isGroup && otherParticipant?.username
+                          ? `Visit @${otherParticipant.username}'s profile`
+                          : undefined
+                      }
+                    >
                       <img
                         src={avatar}
                         alt=""
-                        className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 shadow-xs"
+                        className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 shadow-xs group-hover/avatar:ring-2 group-hover/avatar:ring-[#5036FF] group-hover/avatar:scale-105 transition-all"
                       />
                       {!isGroup && (
                         <span

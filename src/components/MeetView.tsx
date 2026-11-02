@@ -261,7 +261,7 @@ export const MeetView: React.FC<MeetViewProps> = ({ onOpenChatWithUser }) => {
   const photos = currentProfile?.photos || [];
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-20 md:pb-6">
+    <div className="max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-32 md:pb-12">
       {/* Top Header */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md pt-2 pb-3 border-b border-slate-200/90 -mx-2 sm:-mx-4 px-4 sm:px-6">
         <div className="flex items-center justify-between mb-3">
@@ -402,7 +402,7 @@ export const MeetView: React.FC<MeetViewProps> = ({ onOpenChatWithUser }) => {
             <div className="max-w-sm w-full flex flex-col items-center">
               {/* Profile Card Container */}
               <div
-                className={`w-full aspect-[3/4.2] rounded-3xl overflow-hidden relative shadow-2xl border border-slate-200 bg-slate-950 transition-all duration-300 select-none ${
+                className={`w-full max-w-[340px] sm:max-w-sm h-[48vh] sm:h-[500px] max-h-[480px] rounded-3xl overflow-hidden relative shadow-xl border border-slate-200 bg-slate-950 transition-all duration-300 select-none ${
                   swipeAnimation === 'like'
                     ? 'translate-x-[110%] rotate-12 opacity-0'
                     : swipeAnimation === 'pass'
@@ -464,9 +464,9 @@ export const MeetView: React.FC<MeetViewProps> = ({ onOpenChatWithUser }) => {
                 </div>
 
                 {/* Bottom Scrim & Info Details */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-16 p-5 text-white z-10">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-black text-white tracking-tight">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-10 p-3 sm:p-4 text-white z-10">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
                       {currentProfile.displayName}, {currentProfile.age}
                     </h2>
                     {currentProfile.isVerified && (
@@ -475,32 +475,32 @@ export const MeetView: React.FC<MeetViewProps> = ({ onOpenChatWithUser }) => {
                   </div>
 
                   {currentProfile.occupation && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mb-1">
-                      <Briefcase className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
-                      <span>{currentProfile.occupation}</span>
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-300 font-medium mb-0.5">
+                      <Briefcase className="w-3 h-3 text-indigo-300 shrink-0" />
+                      <span className="truncate">{currentProfile.occupation}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mb-2">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                    <span>
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-300 font-medium mb-1.5">
+                    <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                    <span className="truncate">
                       {currentProfile.location} • {currentProfile.distanceKm} km away
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-200 line-clamp-2 leading-relaxed mb-3">
+                  <p className="text-[11px] sm:text-xs text-slate-200 line-clamp-2 leading-snug mb-2">
                     {currentProfile.bio}
                   </p>
 
                   {/* Intent & Passions tags */}
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2 py-0.5 rounded-lg bg-[#5036FF]/30 border border-[#5036FF]/50 text-indigo-200 text-[10px] font-bold">
+                  <div className="flex flex-wrap gap-1">
+                    <span className="px-2 py-0.5 rounded-lg bg-[#5036FF]/30 border border-[#5036FF]/50 text-indigo-200 text-[9px] sm:text-[10px] font-bold">
                       {currentProfile.intent}
                     </span>
                     {currentProfile.passions.slice(0, 3).map((passion) => (
                       <span
                         key={passion}
-                        className="px-2 py-0.5 rounded-lg bg-white/15 backdrop-blur-xs text-slate-200 text-[10px] font-medium"
+                        className="px-2 py-0.5 rounded-lg bg-white/15 backdrop-blur-xs text-slate-200 text-[9px] sm:text-[10px] font-medium"
                       >
                         {passion}
                       </span>
@@ -510,7 +510,7 @@ export const MeetView: React.FC<MeetViewProps> = ({ onOpenChatWithUser }) => {
               </div>
 
               {/* Action Buttons Dock (Tinder style) */}
-              <div className="flex items-center justify-center gap-4 mt-5">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mt-3 sm:mt-4">
                 {/* Rewind */}
                 <button
                   type="button"

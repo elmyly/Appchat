@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   * {
@@ -37,3 +38,33 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Fluid Keyframe Animations for Landing Page */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow: 0 0 15px rgba(80, 54, 255, 0.25);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 30px rgba(80, 54, 255, 0.5);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+

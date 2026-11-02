@@ -110,6 +110,34 @@ export interface TypingIndicator {
   avatar?: string;
 }
 
+export interface ActiveCall {
+  callId: string;
+  conversationId: string;
+  conversationName?: string;
+  callType: 'voice' | 'video';
+  caller: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string;
+  };
+  targetUserId: string;
+  targetUser?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string;
+  };
+  status: 'outgoing_ringing' | 'incoming_ringing' | 'connecting' | 'connected' | 'ended' | 'rejected' | 'busy';
+  startedAt: number;
+  connectedAt?: number;
+  isMuted?: boolean;
+  isSpeaker?: boolean;
+  isCameraOff?: boolean;
+  isRemoteCameraOff?: boolean;
+  isScreenSharing?: boolean;
+}
+
 export interface PollOption {
   id: string;
   text: string;
@@ -263,6 +291,8 @@ export interface VerificationRequest {
   category: string; // e.g. 'Creator', 'Journalist', 'Brand/Business', 'Public Figure', 'Developer'
   documentType: string;
   documentUrl?: string;
+  documentFileName?: string;
+  documentFileSize?: string;
   reason: string;
   status: 'pending' | 'approved' | 'denied';
   adminNotes?: string;

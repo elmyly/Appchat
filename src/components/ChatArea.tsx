@@ -17,9 +17,13 @@ import {
   CornerDownRight,
   Upload,
   Camera,
+  Phone,
+  PhoneCall,
+  Video,
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { useSocial } from '../context/SocialContext';
 import { MessageItem } from './MessageItem';
 import { MessageInput } from './MessageInput';
 import { SecurityModal } from './SecurityModal';
@@ -38,6 +42,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onOpenGroupModal,
 }) => {
   const { user } = useAuth();
+  const { setCurrentTab, setViewingUsername } = useSocial();
   const {
     activeConversation,
     messages,
@@ -51,6 +56,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     pinMessage,
     addGroupMember,
     updateGroupDetails,
+    startVoiceCall,
+    startVideoCall,
   } = useSocket();
 
   const [showSecurityModal, setShowSecurityModal] = useState(false);
@@ -382,12 +389,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* Avatar with status indicator */}
-          <div className="relative shrink-0">
+          {/* Avatar with status indicator - Click to visit profile */}
+          <div
+            onClick={() => {
+              if (!isGroup && otherParticipant?.username) {
+                setViewingUsername(otherParticipant.username);
+                setCurrentTab('profile');
+              }
+            }}
+            className={`relative shrink-0 ${
+              !isGroup && otherParticipant?.username ? 'cursor-pointer group/avatar' : ''
+            }`}
+            title={
+              !isGroup && otherParticipant?.username
+                ? `Visit @${otherParticipant.username}'s profile`
+                : undefined
+            }
+          >
             <img
               src={chatAvatar}
               alt=""
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 shadow-xs"
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 shadow-xs group-hover/avatar:ring-2 group-hover/avatar:ring-[#5036FF] group-hover/avatar:scale-105 transition-all"
             />
             {!isGroup && (
               <span
@@ -401,11 +423,34 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900 truncate">{chatTitle}</h3>
+              <h3
+                onClick={() => {
+                  if (!isGroup && otherParticipant?.username) {
+                    setViewingUsername(otherParticipant.username);
+                    setCurrentTab('profile');
+                  }
+                }}
+                className={`text-sm font-bold text-slate-900 truncate ${
+                  !isGroup && otherParticipant?.username
+                    ? 'cursor-pointer hover:text-[#5036FF] transition-colors'
+                    : ''
+                }`}
+                title={!isGroup && otherParticipant?.username ? `Visit @${otherParticipant.username}'s profile` : undefined}
+              >
+                {chatTitle}
+              </h3>
               {!isGroup && otherParticipant && (
-                <span className="text-xs text-indigo-600 font-mono hidden sm:inline">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingUsername(otherParticipant.username);
+                    setCurrentTab('profile');
+                  }}
+                  className="text-xs text-indigo-600 font-mono hidden sm:inline hover:underline cursor-pointer"
+                  title={`Visit @${otherParticipant.username}'s profile`}
+                >
                   @{otherParticipant.username}
-                </span>
+                </button>
               )}
             </div>
             <div className="flex items-center gap-1.5 text-xs">
@@ -427,6 +472,32 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Voice Call Button (Appel vocal direct) */}
+          {!isGroup && otherParticipant && (
+            <button
+              type="button"
+              onClick={() => startVoiceCall(otherParticipant.id, activeConversation.id)}
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+              title={`Start voice call with ${chatTitle}`}
+            >
+              <Phone className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600/20" />
+              <span className="hidden sm:inline">Voice Call</span>
+            </button>
+          )}
+
+          {/* Video Call Button (Appel vidéo HD) */}
+          {!isGroup && otherParticipant && (
+            <button
+              type="button"
+              onClick={() => startVideoCall(otherParticipant.id, activeConversation.id)}
+              className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+              title={`Start video call with ${chatTitle}`}
+            >
+              <Video className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Video Call</span>
+            </button>
+          )}
+
           {/* Security Shield Badge */}
           <button
             onClick={() => setShowSecurityModal(true)}

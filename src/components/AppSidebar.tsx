@@ -61,9 +61,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ onOpenCreatePost, onOpen
           onClick={() => handleNavClick('feed')}
           className="flex items-center gap-3 px-3 py-2 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-2xl bg-[#5036FF] text-white flex items-center justify-center shadow-md shadow-[#5036FF]/20 group-hover:scale-105 transition-transform">
-            <span className="font-black text-xl tracking-tight">A</span>
-          </div>
+          <img
+            src="/assets/aistudio/Interwoven_Purple_Blue_Ribbon_Logo_baa92702.png"
+            alt="Aura Logo"
+            className="w-10 h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform"
+          />
           <div>
             <span className="text-xl font-black text-slate-900 tracking-tight block">Aura</span>
             <span className="text-[10px] text-slate-400 font-medium tracking-wide block uppercase">

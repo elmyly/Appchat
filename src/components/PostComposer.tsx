@@ -466,89 +466,93 @@ export const PostComposer: React.FC<PostComposerProps> = ({ onSuccess, isModal }
           <div className="border-t border-slate-100 my-2" />
 
           {/* Action toolbar */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-1 text-[#5036FF]">
-              {/* Media input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleMediaUpload}
-                accept="image/*"
-                multiple
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={mediaItems.length >= 4 || isCompressing}
-                className={`p-2 rounded-xl transition-colors ${
-                  mediaItems.length >= 4 || isCompressing
-                    ? 'text-slate-300 cursor-not-allowed'
-                    : 'text-[#5036FF] hover:bg-[#5036FF]/10 cursor-pointer'
-                }`}
-                title="Add Images (Auto-compressed)"
-              >
-                <Image className="w-4 h-4" />
-              </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+            <div className="flex items-center justify-between sm:justify-start gap-1 flex-wrap text-[#5036FF]">
+              <div className="flex items-center gap-0.5">
+                {/* Media input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleMediaUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={mediaItems.length >= 4 || isCompressing}
+                  className={`p-2 rounded-xl transition-colors ${
+                    mediaItems.length >= 4 || isCompressing
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-[#5036FF] hover:bg-[#5036FF]/10 cursor-pointer'
+                  }`}
+                  title="Add Images (Auto-compressed)"
+                >
+                  <Image className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setShowPoll(!showPoll)}
-                className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                  showPoll ? 'bg-[#5036FF]/10 text-[#5036FF]' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-                title="Create a Poll"
-              >
-                <BarChart2 className="w-4 h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPoll(!showPoll)}
+                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                    showPoll ? 'bg-[#5036FF]/10 text-[#5036FF]' : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                  title="Create a Poll"
+                >
+                  <BarChart2 className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Insert Emoji"
-              >
-                <Smile className="w-4 h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  title="Insert Emoji"
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setShowLocationInput(!showLocationInput)}
-                className={`p-2 rounded-xl transition-colors cursor-pointer ${
-                  showLocationInput ? 'bg-[#5036FF]/10 text-[#5036FF]' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-                title="Add Location Tag"
-              >
-                <MapPin className="w-4 h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLocationInput(!showLocationInput)}
+                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                    showLocationInput ? 'bg-[#5036FF]/10 text-[#5036FF]' : 'text-slate-500 hover:bg-slate-100'
+                  }`}
+                  title="Add Location Tag"
+                >
+                  <MapPin className="w-4 h-4" />
+                </button>
+              </div>
 
-              {/* Category selector */}
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none ml-1 cursor-pointer"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
+                {/* Category selector */}
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 focus:outline-none cursor-pointer max-w-[110px] truncate"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
 
-              {/* Visibility selector */}
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as any)}
-                className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none ml-1 cursor-pointer"
-              >
-                <option value="public">Public</option>
-                <option value="followers">Followers</option>
-                <option value="private">Only Me</option>
-              </select>
+                {/* Visibility selector */}
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as any)}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 focus:outline-none cursor-pointer max-w-[95px] truncate"
+                >
+                  <option value="public">Public</option>
+                  <option value="followers">Followers</option>
+                  <option value="private">Only Me</option>
+                </select>
+              </div>
             </div>
 
             {/* Submit & Character Counter */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between sm:justify-end gap-3 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <span
                 className={`text-xs font-mono font-medium ${
                   charsLeft < 20 ? 'text-rose-500 font-bold' : 'text-slate-400'

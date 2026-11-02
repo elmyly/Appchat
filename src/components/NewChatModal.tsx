@@ -42,12 +42,18 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({ onClose }) => {
   const handleStartChat = async (targetUsername: string) => {
     setIsStarting(true);
     setError(null);
-    const conv = await startDirectConversation(targetUsername);
+    const clean = targetUsername.trim().replace(/^@/, '');
+    if (user && (clean.toLowerCase() === user.username.toLowerCase() || clean === user.id)) {
+      setError('You cannot start a conversation with yourself.');
+      setIsStarting(false);
+      return;
+    }
+    const conv = await startDirectConversation(clean);
     setIsStarting(false);
     if (conv) {
       onClose();
     } else {
-      setError(`Could not start chat with @${targetUsername}`);
+      setError(`Could not start chat with @${clean}. Please ensure the username exists in the directory.`);
     }
   };
 

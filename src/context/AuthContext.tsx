@@ -21,6 +21,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (identifier: string, password?: string) => Promise<boolean>;
+  loginWithGoogle: (email: string, displayName?: string, avatar?: string) => Promise<boolean>;
   register: (data: {
     username: string;
     email: string;
@@ -110,6 +111,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (err: any) {
       setError(err.message || 'Network error');
+      return false;
+    }
+  };
+
+  const loginWithGoogle = async (googleEmail: string, googleDisplayName?: string, googleAvatar?: string): Promise<boolean> => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: googleEmail,
+          displayName: googleDisplayName,
+          avatar: googleAvatar,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Gmail login failed');
+        return false;
+      }
+
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem('aurachat_token', data.token);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Network error during Gmail login');
       return false;
     }
   };
@@ -333,6 +363,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         requestRegistrationOtp,
         verifyRegistrationOtp,

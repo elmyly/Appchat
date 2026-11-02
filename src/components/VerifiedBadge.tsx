@@ -1,16 +1,19 @@
 import React from 'react';
 
 interface VerifiedBadgeProps {
+  isVerified?: boolean;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
   category?: string;
 }
 
 export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
+  isVerified = true,
   size = 'sm',
   className = '',
   category,
 }) => {
+  if (isVerified === false) return null;
   const sizeMap = {
     xs: 'w-3.5 h-3.5',
     sm: 'w-4 h-4',

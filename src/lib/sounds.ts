@@ -130,7 +130,110 @@ class SoundEffects {
       osc.start(now);
       osc.stop(now + 0.12);
     } catch {
-      // Ignore
+      // Ignore audio error
+    }
+  }
+
+  private ringtoneInterval: any = null;
+
+  // Synthesized voice call ringtone (outgoing dial pulse or incoming harmonic chime)
+  public startRingtone(mode: 'outgoing' | 'incoming') {
+    this.stopRingtone();
+    if (this.isMuted) return;
+
+    const playPulse = () => {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
+
+      try {
+        const now = ctx.currentTime;
+        if (mode === 'outgoing') {
+          // Outgoing ringing dial tone (dual frequency 440Hz + 480Hz)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc1.type = 'sine';
+          osc2.type = 'sine';
+          osc1.frequency.setValueAtTime(440, now);
+          osc2.frequency.setValueAtTime(480, now);
+
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.start(now);
+          osc2.start(now);
+          osc1.stop(now + 1.2);
+          osc2.stop(now + 1.2);
+        } else {
+          // Incoming call melodic marimba arpeggio (C5 -> E5 -> G5 -> C6)
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const noteTime = now + idx * 0.12;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, noteTime);
+
+            gain.gain.setValueAtTime(0.08, noteTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.35);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(noteTime);
+            osc.stop(noteTime + 0.35);
+          });
+        }
+      } catch {
+        // Audio interrupted
+      }
+    };
+
+    playPulse();
+    this.ringtoneInterval = setInterval(playPulse, mode === 'outgoing' ? 3000 : 2200);
+  }
+
+  public stopRingtone() {
+    if (this.ringtoneInterval) {
+      clearInterval(this.ringtoneInterval);
+      this.ringtoneInterval = null;
+    }
+  }
+
+  // Call ended / rejected disconnect sound
+  public playCallEnded() {
+    this.stopRingtone();
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const freqs = [480, 420, 340];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const noteTime = now + idx * 0.11;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteTime);
+
+        gain.gain.setValueAtTime(0.06, noteTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + 0.15);
+      });
+    } catch {
+      // Audio interrupted
     }
   }
 }

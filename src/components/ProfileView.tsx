@@ -19,7 +19,13 @@ import {
   Lock,
   Shield,
   Edit3,
+  BadgeCheck,
+  Camera,
+  Settings,
+  Phone,
+  Video,
 } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 
 interface ProfileViewProps {
   username?: string;
@@ -35,7 +41,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ username }) => {
     blockUser,
     muteUser,
   } = useSocial();
-  const { startDirectConversation, selectConversation } = useSocket();
+  const {
+    startDirectConversation,
+    selectConversation,
+    startVoiceCall,
+    startVideoCall,
+  } = useSocket();
 
   const targetUsername = (username || viewingUsername || currentUser?.username || '').replace(
     /^@/,
@@ -146,6 +157,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ username }) => {
     }
   };
 
+  const handleStartVoiceCall = async () => {
+    if (!profile) return;
+    try {
+      const conv = await startDirectConversation(profile.username);
+      if (conv) {
+        await selectConversation(conv);
+        startVoiceCall(profile.id, conv.id);
+      }
+    } catch (err) {
+      console.error('Failed to start voice call from profile', err);
+    }
+  };
+
+  const handleStartVideoCall = async () => {
+    if (!profile) return;
+    try {
+      const conv = await startDirectConversation(profile.username);
+      if (conv) {
+        await selectConversation(conv);
+        startVideoCall(profile.id, conv.id);
+      }
+    } catch (err) {
+      console.error('Failed to start video call from profile', err);
+    }
+  };
+
   const handleShareProfile = () => {
     const url = `${window.location.origin}/u/${targetUsername}`;
     navigator.clipboard.writeText(url);
@@ -195,44 +232,95 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ username }) => {
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
 
   return (
-    <div className="flex-1 max-w-3xl min-h-screen border-r border-slate-100 bg-white pb-20">
+    <div className="w-full max-w-3xl min-h-screen border-r border-slate-100 bg-white pb-32 md:pb-16 overflow-x-hidden">
       {/* Cover Banner */}
-      <div className="h-48 md:h-56 w-full relative bg-slate-100 overflow-hidden">
+      <div className="h-36 sm:h-48 md:h-56 w-full relative bg-slate-100 overflow-hidden">
         <img src={bannerUrl} alt="Cover" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
       </div>
 
       {/* Profile Header Bar */}
-      <div className="px-6 relative">
-        <div className="flex items-end justify-between -mt-14 sm:-mt-16 mb-4">
+      <div className="px-4 sm:px-6 relative">
+        <div className="flex items-end justify-between -mt-12 sm:-mt-16 mb-4 flex-wrap gap-2">
           {/* Avatar */}
-          <div className="relative">
+          <div className="relative group">
             <img
               src={avatarUrl}
               alt={profile.displayName}
-              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-md bg-white object-cover"
+              className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-md bg-white object-cover"
             />
+            {isSelf && (
+              <button
+                onClick={() => setCurrentTab('settings')}
+                className="absolute bottom-1 right-1 p-2 bg-[#5036FF] hover:bg-[#432bd9] text-white rounded-full shadow-md border-2 border-white transition-transform active:scale-90 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
+                title="Change profile picture"
+                aria-label="Change profile picture"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-2 flex-wrap">
             {isSelf ? (
-              <button
-                onClick={() => setCurrentTab('settings')}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                Edit Profile
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setCurrentTab('settings')}
+                  className="min-h-[44px] px-3.5 sm:px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Profile</span>
+                </button>
+                <button
+                  onClick={() => setCurrentTab('settings')}
+                  className="min-h-[44px] min-w-[44px] p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-95"
+                  title="Settings & Privacy"
+                  aria-label="Settings & Privacy"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+                {!profile.isVerified && (
+                  <button
+                    onClick={() => {
+                      window.location.hash = '#verification';
+                      setCurrentTab('settings');
+                    }}
+                    className="min-h-[44px] px-3 sm:px-3.5 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200/60 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                    title="Request Verified Badge"
+                  >
+                    <BadgeCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Get Verified</span>
+                  </button>
+                )}
+              </div>
             ) : (
               <>
                 <button
                   onClick={handleStartMessage}
-                  className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5"
+                  className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                   title="Direct Message"
                 >
                   <MessageSquare className="w-4 h-4 text-[#5036FF]" />
                   <span className="hidden sm:inline">Message</span>
+                </button>
+
+                <button
+                  onClick={handleStartVoiceCall}
+                  className="px-2.5 sm:px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                  title={`Voice Call @${profile.username}`}
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden md:inline">Call</span>
+                </button>
+
+                <button
+                  onClick={handleStartVideoCall}
+                  className="px-2.5 sm:px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                  title={`Video Call @${profile.username}`}
+                >
+                  <Video className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="hidden md:inline">Video</span>
                 </button>
 
                 <button
@@ -309,6 +397,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ username }) => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-slate-900">{profile.displayName}</h1>
+              <VerifiedBadge isVerified={profile.isVerified} category={profile.verifiedCategory} size="md" />
               {profile.role === 'admin' && (
                 <span
                   title="Aura Core Team"

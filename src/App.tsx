@@ -5,7 +5,7 @@ import { SocialProvider, useSocial } from './context/SocialContext';
 import { NewChatModal } from './components/NewChatModal';
 import { GroupModal } from './components/GroupModal';
 import { ProfileModal } from './components/ProfileModal';
-import { AuthModal } from './components/AuthModal';
+import { AuthPage } from './components/AuthPage';
 import { PushNotificationBanner } from './components/PushNotificationBanner';
 import { HomePage } from './components/HomePage';
 import { ResetPasswordModal } from './components/ResetPasswordModal';
@@ -28,11 +28,12 @@ import { ShareToChatModal } from './components/ShareToChatModal';
 import { ReportModal } from './components/ReportModal';
 import { BoardDetailModal } from './components/BoardDetailModal';
 import { VisualDetailModal } from './components/VisualDetailModal';
+import { VoiceCallModal } from './components/VoiceCallModal';
 import { X } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const { selectConversation, conversations } = useSocket();
+  const { selectConversation, conversations, activeConversation, startDirectConversation } = useSocket();
   const {
     currentTab,
     setCurrentTab,
@@ -47,8 +48,14 @@ const MainAppContent: React.FC = () => {
     visuals,
   } = useSocial();
 
-  // Navigation view: 'home' (public landing) vs 'app' (main platform)
-  const [currentView, setCurrentView] = useState<'home' | 'app'>('home');
+  // Navigation view: 'home' (public landing) vs 'auth' (dedicated sign in/up page) vs 'app' (main platform)
+  const [currentView, setCurrentView] = useState<'home' | 'app' | 'auth'>('home');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+
+  const handleOpenAuth = (mode: 'login' | 'register' | 'forgot' = 'login') => {
+    setAuthMode(mode);
+    setCurrentView('auth');
+  };
 
   // Messenger modals state
   const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -62,15 +69,6 @@ const MainAppContent: React.FC = () => {
     type: 'post' | 'comment' | 'user' | 'visual';
     preview?: string;
   } | null>(null);
-
-  // Auth modal state
-  const [authModalConfig, setAuthModalConfig] = useState<{
-    isOpen: boolean;
-    mode: 'login' | 'register' | 'forgot';
-  }>({
-    isOpen: false,
-    mode: 'login',
-  });
 
   // Reset password token modal state
   const [resetToken, setResetToken] = useState<string | null>(null);
@@ -86,17 +84,34 @@ const MainAppContent: React.FC = () => {
 
   // When user signs in, switch to app view
   const handleAuthSuccess = () => {
-    setAuthModalConfig({ isOpen: false, mode: 'login' });
     setCurrentView('app');
   };
 
-  const handleOpenChatWithUser = (targetUserId: string) => {
+  const handleOpenChatWithUser = async (targetUserIdOrUsername: string) => {
     setCurrentTab('messages');
+    const clean = targetUserIdOrUsername.replace(/^@/, '').trim();
     const existing = conversations.find(
-      (c) => c.type === 'direct' && c.participantIds.includes(targetUserId)
+      (c) =>
+        c.type === 'direct' &&
+        (c.participantIds.includes(clean) ||
+          c.participants?.some(
+            (p) =>
+              p.id === clean ||
+              p.username.toLowerCase() === clean.toLowerCase()
+          ))
     );
     if (existing) {
-      selectConversation(existing);
+      await selectConversation(existing);
+      return;
+    }
+
+    try {
+      const conv = await startDirectConversation(clean);
+      if (conv) {
+        await selectConversation(conv);
+      }
+    } catch (e) {
+      console.error('Failed to open chat with user:', e);
     }
   };
 
@@ -129,20 +144,7 @@ const MainAppContent: React.FC = () => {
           onSuccess={() => {
             setResetToken(null);
             window.history.replaceState({}, document.title, window.location.pathname);
-            setAuthModalConfig({ isOpen: true, mode: 'login' });
-          }}
-        />
-      )}
-
-      {/* Auth Modal (Sign in / Register with OTP / Forgot Password) */}
-      {authModalConfig.isOpen && (
-        <AuthModal
-          initialMode={authModalConfig.mode}
-          onClose={() => setAuthModalConfig({ isOpen: false, mode: 'login' })}
-          onSuccess={handleAuthSuccess}
-          onOpenResetWithToken={(token) => {
-            setAuthModalConfig({ isOpen: false, mode: 'login' });
-            setResetToken(token);
+            handleOpenAuth('login');
           }}
         />
       )}
@@ -150,16 +152,18 @@ const MainAppContent: React.FC = () => {
       {/* Global Modals for Social Features */}
       {/* 1. Create Post Modal */}
       {showCreatePostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden p-4 sm:p-6 relative max-h-[92vh] flex flex-col my-auto">
             <button
               onClick={() => setShowCreatePostModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-base font-bold text-slate-900 mb-4">Compose Aura Post</h3>
-            <PostComposer isModal onSuccess={() => setShowCreatePostModal(false)} />
+            <h3 className="text-base font-bold text-slate-900 mb-3 sm:mb-4">Compose Aura Post</h3>
+            <div className="overflow-y-auto custom-scrollbar flex-1">
+              <PostComposer isModal onSuccess={() => setShowCreatePostModal(false)} />
+            </div>
           </div>
         </div>
       )}
@@ -220,19 +224,23 @@ const MainAppContent: React.FC = () => {
         <ProfileModal onClose={() => setShowProfileModal(false)} />
       )}
 
-      {/* View routing: Public Landing Page vs Unified Platform Application */}
+      {/* Real-time WebRTC Voice Call Modal */}
+      <VoiceCallModal />
+
+      {/* View routing: Public Landing Page vs Dedicated Auth Page vs Unified Platform Application */}
       {currentView === 'home' && !user ? (
         <HomePage
           onEnterApp={() => setCurrentView('app')}
           onOpenAuth={(mode = 'login') => {
-            setAuthModalConfig({ isOpen: true, mode });
+            handleOpenAuth(mode);
           }}
         />
-      ) : !user ? (
-        <AuthModal
+      ) : (currentView === 'auth' || !user) && !user ? (
+        <AuthPage
+          initialMode={authMode}
           onSuccess={handleAuthSuccess}
+          onBack={() => setCurrentView('home')}
           onOpenResetWithToken={(token) => setResetToken(token)}
-          onClose={() => setCurrentView('home')}
         />
       ) : (
         /* --- UNIFIED PLATFORM LAYOUT --- */
@@ -241,7 +249,7 @@ const MainAppContent: React.FC = () => {
           {/* Column 1: Desktop Left Navigation Sidebar (Stationary & Sticky) */}
           <AppSidebar
             onOpenCreatePost={() => setShowCreatePostModal(true)}
-            onOpenAuth={() => setAuthModalConfig({ isOpen: true, mode: 'login' })}
+            onOpenAuth={() => handleOpenAuth('login')}
           />
 
           {/* Column 2: Center Content Area (Independently Scrolls) */}
@@ -275,7 +283,9 @@ const MainAppContent: React.FC = () => {
               {currentTab === 'profile' && (
                 <ProfileView username={viewingUsername || user.username} />
               )}
-              {currentTab === 'settings' && <SettingsView />}
+              {currentTab === 'settings' && (
+                <SettingsView onBack={() => setCurrentTab('profile')} />
+              )}
               {currentTab === 'admin' && <AdminView />}
             </main>
           )}
@@ -283,8 +293,10 @@ const MainAppContent: React.FC = () => {
           {/* Column 3: Desktop Right Sidebar (Stationary & Sticky, hidden in Messages) */}
           {currentTab !== 'messages' && <RightSidebar />}
 
-          {/* Mobile Bottom Navigation Bar */}
-          <MobileNavigation onOpenCreatePost={() => setShowCreatePostModal(true)} />
+          {/* Mobile Bottom Navigation Bar - hidden during active conversation in chat */}
+          {(!activeConversation || currentTab !== 'messages') && (
+            <MobileNavigation onOpenCreatePost={() => setShowCreatePostModal(true)} />
+          )}
         </div>
       )}
     </>

@@ -26,7 +26,7 @@ export const BoardsView: React.FC = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto w-full px-3 sm:px-6 py-4 space-y-4 pb-20 md:pb-6">
+    <div className="max-w-6xl mx-auto w-full px-3 sm:px-6 py-4 space-y-4 pb-32 md:pb-12">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

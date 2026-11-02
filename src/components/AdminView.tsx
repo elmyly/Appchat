@@ -414,7 +414,7 @@ export const AdminView: React.FC = () => {
   });
 
   return (
-    <div className="flex-1 max-w-5xl min-h-screen border-r border-slate-100 bg-white p-6 pb-24">
+    <div className="flex-1 max-w-5xl min-h-screen border-r border-slate-100 bg-white px-3.5 sm:px-6 py-4 sm:py-6 pb-32 md:pb-24 overflow-x-hidden">
       {/* Toast Feedback */}
       {feedbackToast && (
         <div
@@ -436,11 +436,11 @@ export const AdminView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-[#5036FF]/10 text-[#5036FF] rounded-2xl">
+          <div className="p-3 bg-[#5036FF]/10 text-[#5036FF] rounded-2xl shrink-0">
             <Shield className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-slate-900">Platform Management Console</h1>
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-[#5036FF] rounded-md">
                 Admin
@@ -453,17 +453,17 @@ export const AdminView: React.FC = () => {
         </div>
         <button
           onClick={fetchAdminData}
-          className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer self-start sm:self-auto"
+          className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer self-start sm:self-auto min-h-[44px] flex items-center justify-center"
         >
           Refresh Data
         </button>
       </div>
 
       {/* Sub Tabs Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 border-b border-slate-100">
+      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar whitespace-nowrap pb-3 mb-6 border-b border-slate-100">
         <button
           onClick={() => setActiveTab('verifications')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 min-h-[44px] ${
             activeTab === 'verifications'
               ? 'bg-[#5036FF] text-white shadow-md shadow-[#5036FF]/20'
               : 'text-slate-600 hover:bg-slate-100'
@@ -484,7 +484,7 @@ export const AdminView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 min-h-[44px] ${
             activeTab === 'users'
               ? 'bg-[#5036FF] text-white shadow-md shadow-[#5036FF]/20'
               : 'text-slate-600 hover:bg-slate-100'
@@ -497,7 +497,7 @@ export const AdminView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('reports')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 min-h-[44px] ${
             activeTab === 'reports'
               ? 'bg-[#5036FF] text-white shadow-md shadow-[#5036FF]/20'
               : 'text-slate-600 hover:bg-slate-100'
@@ -518,7 +518,7 @@ export const AdminView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 min-h-[44px] ${
             activeTab === 'overview'
               ? 'bg-[#5036FF] text-white shadow-md shadow-[#5036FF]/20'
               : 'text-slate-600 hover:bg-slate-100'
@@ -627,18 +627,25 @@ export const AdminView: React.FC = () => {
 
                   {/* Evidence & Justification Box */}
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-2">
-                    <div className="flex items-center justify-between text-slate-500 font-semibold text-[11px]">
+                    <div className="flex items-center justify-between text-slate-500 font-semibold text-[11px] flex-wrap gap-2">
                       <span>Document / Proof: {req.documentType}</span>
-                      {req.documentUrl && (
-                        <a
-                          href={req.documentUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#5036FF] hover:underline flex items-center gap-1 font-bold"
-                        >
-                          View External Proof <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {req.documentFileName && (
+                          <span className="text-[10px] text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded font-mono">
+                            {req.documentFileName} {req.documentFileSize ? `(${req.documentFileSize})` : ''}
+                          </span>
+                        )}
+                        {req.documentUrl && (
+                          <a
+                            href={req.documentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#5036FF] hover:underline flex items-center gap-1 font-bold"
+                          >
+                            View Attached Document <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <span className="text-slate-400 font-medium">Applicant's Reason: </span>

@@ -68,7 +68,7 @@ export const NotificationsView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-20 md:pb-6">
+    <div className="max-w-2xl mx-auto w-full px-2 sm:px-4 py-4 space-y-4 pb-32 md:pb-12">
       {/* Header Bar */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md pt-2 pb-3 border-b border-slate-200/90 -mx-2 sm:-mx-4 px-4 sm:px-6 flex items-center justify-between">
         <div>

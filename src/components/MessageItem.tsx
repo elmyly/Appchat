@@ -17,6 +17,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { Message, User, ParticipantInfo } from '../types';
+import { useSocial } from '../context/SocialContext';
 
 interface MessageItemProps {
   message: Message;
@@ -47,6 +48,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   isHighlighted,
 }) => {
   const isMine = message.senderId === currentUser.id;
+  const { setCurrentTab, setViewingUsername } = useSocial();
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -126,13 +128,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         </div>
       )}
 
-      {/* Sender Avatar (for groups or incoming messages) */}
+      {/* Sender Avatar - Click to visit profile */}
       {!isMine && (
-        <div className="shrink-0 pt-0.5">
+        <div
+          onClick={() => {
+            if (message.senderUsername) {
+              setViewingUsername(message.senderUsername);
+              setCurrentTab('profile');
+            }
+          }}
+          className="shrink-0 pt-0.5 cursor-pointer group/avatar"
+          title={`Visit @${message.senderUsername}'s profile`}
+        >
           <img
             src={message.senderAvatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=user'}
             alt={message.senderUsername}
-            className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shadow-xs"
+            className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shadow-xs group-hover/avatar:ring-2 group-hover/avatar:ring-[#5036FF] group-hover/avatar:scale-105 transition-all"
           />
         </div>
       )}
@@ -141,7 +152,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({
       <div className={`relative max-w-[85%] sm:max-w-[70%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
         {/* Group Sender Header */}
         {!isMine && isGroup && (
-          <div className="flex items-center gap-1.5 mb-1 px-1">
+          <div
+            onClick={() => {
+              if (message.senderUsername) {
+                setViewingUsername(message.senderUsername);
+                setCurrentTab('profile');
+              }
+            }}
+            className="flex items-center gap-1.5 mb-1 px-1 cursor-pointer hover:opacity-80 transition-opacity"
+            title={`Visit @${message.senderUsername}'s profile`}
+          >
             <span className="text-xs font-semibold text-indigo-700">
               {message.senderDisplayName}
             </span>
