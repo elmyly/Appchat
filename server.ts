@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
 import { setupSocialRoutes, ServerUser } from './src/server/socialRoutes';
 import { setupDatingRoutes } from './src/server/datingRoutes';
 
@@ -67,17 +66,17 @@ app.post('/api/ai/elara/reply', async (req, res) => {
   if (!user) return res.status(401).json({ error: 'Authentication required' });
   const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
   if (!message) return res.status(400).json({ error: 'Message is required' });
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) return res.status(503).json({ error: 'Elara is not configured yet' });
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}`,
+    const prompt = `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}\n\nReply as Elara:`;
+    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`, {
+      headers: { Accept: 'text/plain' },
+      signal: AbortSignal.timeout(30000),
     });
-    return res.json({ reply: result.text || 'I am here with you. Could you say that another way?' });
+    if (!response.ok) throw new Error(`Pollinations ${response.status}: ${await response.text()}`);
+    const reply = await response.text();
+    return res.json({ reply: reply.trim() || 'I am here with you. Could you say that another way?' });
   } catch (error) {
-    console.error('[Elara] Gemini request failed:', error);
+    console.error('[Elara] Pollinations request failed:', error);
     return res.status(502).json({ error: 'Elara could not respond right now' });
   }
 });
