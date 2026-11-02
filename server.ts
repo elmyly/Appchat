@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { GoogleGenAI } from '@google/genai';
 import { setupSocialRoutes, ServerUser } from './src/server/socialRoutes';
 import { setupDatingRoutes } from './src/server/datingRoutes';
 
@@ -45,6 +46,41 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+app.get('/api/ai/elara/personality', (req, res) => {
+  const user = getAuthUser(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Administrator access required' });
+  return res.json({ personality: elaraPersonality.value });
+});
+
+app.patch('/api/ai/elara/personality', (req, res) => {
+  const user = getAuthUser(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Administrator access required' });
+  const personality = typeof req.body?.personality === 'string' ? req.body.personality.trim() : '';
+  if (!personality || personality.length > 4000) return res.status(400).json({ error: 'Personality must be 1–4000 characters' });
+  elaraPersonality.value = personality;
+  return res.json({ success: true, personality });
+});
+
+app.post('/api/ai/elara/reply', async (req, res) => {
+  const user = getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Authentication required' });
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+  if (!message) return res.status(400).json({ error: 'Message is required' });
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) return res.status(503).json({ error: 'Elara is not configured yet' });
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}`,
+    });
+    return res.json({ reply: result.text || 'I am here with you. Could you say that another way?' });
+  } catch (error) {
+    console.error('[Elara] Gemini request failed:', error);
+    return res.status(502).json({ error: 'Elara could not respond right now' });
+  }
+});
 
 // Generate short-lived Cloudflare TURN credentials on the server. The TURN
 // API token must never be exposed to the browser or stored in a VITE_* value.
@@ -152,6 +188,21 @@ const sessions: Map<string, string> = new Map(); // token -> userId
 const conversations: Map<string, Conversation> = new Map(); // convId -> Conversation
 const messages: Map<string, Message[]> = new Map(); // convId -> Message[]
 const onlineUsers: Map<string, Set<string>> = new Map(); // userId -> Set of socketIds
+
+// Built-in AI account. It is searchable like any other account, but has no
+// password login; replies are generated through the protected AI endpoint.
+const elara: User = {
+  id: 'user_elara', username: 'elara', email: 'elara@aura.ai', displayName: 'Elara',
+  bio: 'Aura’s thoughtful AI companion.', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=elara',
+  passwordHash: '', statusMessage: 'AI assistant', publicKeyFingerprint: 'ELARA-AI', createdAt: Date.now(), lastSeen: Date.now(),
+  followers: [], following: [], blockedUsers: [], mutedUsers: [], isPrivate: false, role: 'user', savedPostIds: [], isVerified: true,
+  verifiedCategory: 'Aura AI',
+};
+users.set(elara.id, elara);
+usersByUsername.set(elara.username, elara.id);
+usersByEmail.set(elara.email, elara.id);
+
+const elaraPersonality = { value: process.env.ELARA_PERSONALITY || 'You are Elara, a warm, helpful, concise AI companion in Aura.' };
 
 // Password reset tokens store: token -> { token, userId, email, expiresAt }
 export interface PasswordResetToken {
@@ -1195,18 +1246,22 @@ io.on('connection', (socket) => {
     keyFingerprint: string;
     type: 'text' | 'image' | 'file' | 'audio' | 'system';
     fileMeta?: FileMeta;
+    aiReplyFor?: string;
   }) => {
     if (!authenticatedUserId) {
       return socket.emit('error', { message: 'Unauthenticated socket' });
     }
 
-    const { conversationId, ciphertext, iv, keyFingerprint, type, fileMeta } = payload;
+    const { conversationId, ciphertext, iv, keyFingerprint, type, fileMeta, aiReplyFor } = payload;
     const conv = conversations.get(conversationId);
     if (!conv || !conv.participantIds.includes(authenticatedUserId)) {
       return socket.emit('error', { message: 'Cannot send message to this conversation' });
     }
 
-    const sender = users.get(authenticatedUserId);
+    if (aiReplyFor && (aiReplyFor !== 'user_elara' || !conv.participantIds.includes('user_elara'))) {
+      return socket.emit('error', { message: 'Invalid AI reply target' });
+    }
+    const sender = users.get(aiReplyFor || authenticatedUserId);
     if (!sender) return;
 
     const messageId = 'msg_' + crypto.randomUUID().slice(0, 10);
