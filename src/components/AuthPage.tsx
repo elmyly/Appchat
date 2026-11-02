@@ -61,7 +61,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   // OTP Verification states
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [otpTimer, setOtpTimer] = useState(60);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
@@ -102,9 +101,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         if (result.success) {
           setEmailSent(!!result.emailSent);
           setOtpTimer(60);
-          if (result.devOtp) {
-            setDevOtp(result.devOtp);
-          }
           setMode('verify-otp');
         }
       }
@@ -168,9 +164,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       if (res.success) {
         setOtpTimer(60);
         setResendStatus('New code sent to your email!');
-        if (res.devOtp) {
-          setDevOtp(res.devOtp);
-        }
         setTimeout(() => setResendStatus(null), 4000);
       }
     } catch (err: any) {
@@ -541,19 +534,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   />
                 </div>
               </div>
-
-              {devOtp && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
-                  <span>Quick Access Code:</span>
-                  <button
-                    type="button"
-                    onClick={() => setOtp(devOtp)}
-                    className="font-mono font-bold text-[#5036FF] hover:underline cursor-pointer bg-white px-2 py-0.5 rounded border border-amber-300"
-                  >
-                    {devOtp} (Click to auto-fill)
-                  </button>
-                </div>
-              )}
 
               <button
                 type="submit"
