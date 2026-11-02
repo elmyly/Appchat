@@ -68,12 +68,25 @@ app.post('/api/ai/elara/reply', async (req, res) => {
   if (!message) return res.status(400).json({ error: 'Message is required' });
   try {
     const prompt = `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}\n\nReply as Elara:`;
-    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai-fast`, {
-      headers: { Accept: 'text/plain' },
-      signal: AbortSignal.timeout(10000),
-    });
+    const pollinationsKey = process.env.POLLINATIONS_API_KEY?.trim();
+    const response = pollinationsKey
+      ? await fetch('https://gen.pollinations.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${pollinationsKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'openai-fast', messages: [
+            { role: 'system', content: elaraPersonality.value },
+            { role: 'user', content: message },
+          ] }),
+          signal: AbortSignal.timeout(10000),
+        })
+      : await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai-fast`, {
+          headers: { Accept: 'text/plain' },
+          signal: AbortSignal.timeout(10000),
+        });
     if (!response.ok) throw new Error(`Pollinations ${response.status}: ${await response.text()}`);
-    const reply = await response.text();
+    const reply = pollinationsKey
+      ? (await response.json()).choices?.[0]?.message?.content
+      : await response.text();
     return res.json({ reply: reply.trim() || 'I am here with you. Could you say that another way?' });
   } catch (error) {
     console.error('[Elara] Pollinations request failed:', error);
