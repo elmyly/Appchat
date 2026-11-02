@@ -68,9 +68,9 @@ app.post('/api/ai/elara/reply', async (req, res) => {
   if (!message) return res.status(400).json({ error: 'Message is required' });
   try {
     const prompt = `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}\n\nReply as Elara:`;
-    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`, {
+    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai-fast`, {
       headers: { Accept: 'text/plain' },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) throw new Error(`Pollinations ${response.status}: ${await response.text()}`);
     const reply = await response.text();
