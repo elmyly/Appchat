@@ -151,6 +151,11 @@ function createGmailTransporter() {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
+      // Prevent a stalled SMTP connection from leaving registration spinning
+      // forever on hosted environments such as Render.
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
       auth: {
         user: cleanUser,
         pass: cleanPass,
