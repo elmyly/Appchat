@@ -69,12 +69,39 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
+// STUN is enough for many desktop connections, but mobile carriers and
+// restrictive Wi-Fi often require a TURN relay. Configure TURN in the
+// frontend build environment (VITE_TURN_URL, VITE_TURN_USERNAME,
+// VITE_TURN_CREDENTIAL) for reliable calls across different networks.
+const turnUrl = (import.meta.env.VITE_TURN_URL || '').trim();
+const turnUsername = (import.meta.env.VITE_TURN_USERNAME || '').trim();
+const turnCredential = (import.meta.env.VITE_TURN_CREDENTIAL || '').trim();
+
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    ...(turnUrl && turnUsername && turnCredential
+      ? [{ urls: turnUrl, username: turnUsername, credential: turnCredential }]
+      : []),
   ],
+  iceCandidatePoolSize: 10,
+};
+
+const attachRemoteStream = (
+  event: RTCTrackEvent,
+  setStream: React.Dispatch<React.SetStateAction<MediaStream | null>>,
+  audioElement: HTMLAudioElement | null
+) => {
+  const stream = event.streams?.[0] || new MediaStream([event.track]);
+  setStream((current) => current || stream);
+  if (audioElement && audioElement.srcObject !== stream) {
+    audioElement.srcObject = stream;
+    audioElement.play().catch(() => {
+      // Mobile browsers may require the first playback to follow a user tap.
+    });
+  }
 };
 
 const getMediaStream = async (type: 'voice' | 'video'): Promise<MediaStream> => {
@@ -995,13 +1022,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
         pc.ontrack = (event) => {
-          if (event.streams && event.streams[0]) {
-            setRemoteStream(event.streams[0]);
-            if (remoteAudioRef.current) {
-              remoteAudioRef.current.srcObject = event.streams[0];
-              remoteAudioRef.current.play().catch(() => {});
-            }
-          }
+          attachRemoteStream(event, setRemoteStream, remoteAudioRef.current);
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          console.info('[WebRTC] caller ICE state:', pc.iceConnectionState);
         };
 
         const callId = 'call_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
@@ -1130,15 +1155,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-          if (remoteAudioRef.current) {
-            remoteAudioRef.current.srcObject = event.streams[0];
-            remoteAudioRef.current.play().catch(() => {});
-          }
-        }
-      };
+        pc.ontrack = (event) => {
+          attachRemoteStream(event, setRemoteStream, remoteAudioRef.current);
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          console.info('[WebRTC] receiver ICE state:', pc.iceConnectionState);
+        };
 
       pc.onicecandidate = (event) => {
         if (event.candidate && socket) {
