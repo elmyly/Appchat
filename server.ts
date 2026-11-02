@@ -46,6 +46,43 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
+// Generate short-lived Cloudflare TURN credentials on the server. The TURN
+// API token must never be exposed to the browser or stored in a VITE_* value.
+app.get('/api/webrtc/ice-servers', async (_req, res) => {
+  const turnKeyId = process.env.CLOUDFLARE_TURN_KEY_ID;
+  const turnApiToken = process.env.CLOUDFLARE_TURN_API_TOKEN;
+
+  if (!turnKeyId || !turnApiToken) {
+    return res.json({ iceServers: [] });
+  }
+
+  try {
+    const response = await fetch(
+      `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(turnKeyId)}/credentials/generate-ice-servers`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${turnApiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ttl: 86400 }),
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!response.ok) {
+      const details = await response.text();
+      console.error('[WebRTC] Cloudflare TURN credential error:', response.status, details);
+      return res.status(502).json({ error: 'TURN credentials unavailable' });
+    }
+
+    return res.json(await response.json());
+  } catch (error) {
+    console.error('[WebRTC] Cloudflare TURN request failed:', error);
+    return res.status(502).json({ error: 'TURN credentials unavailable' });
+  }
+});
+
 // --- In-Memory Database Models ---
 export type User = ServerUser;
 
