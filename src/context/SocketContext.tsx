@@ -73,20 +73,35 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 // restrictive Wi-Fi often require a TURN relay. Configure TURN in the
 // frontend build environment (VITE_TURN_URL, VITE_TURN_USERNAME,
 // VITE_TURN_CREDENTIAL) for reliable calls across different networks.
-const turnUrl = (import.meta.env.VITE_TURN_URL || '').trim();
-const turnUsername = (import.meta.env.VITE_TURN_USERNAME || '').trim();
-const turnCredential = (import.meta.env.VITE_TURN_CREDENTIAL || '').trim();
+const staticTurnUrl = (import.meta.env.VITE_TURN_URL || '').trim();
+const staticTurnUsername = (import.meta.env.VITE_TURN_USERNAME || '').trim();
+const staticTurnCredential = (import.meta.env.VITE_TURN_CREDENTIAL || '').trim();
 
-const RTC_CONFIG: RTCConfiguration = {
+const BASE_RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    ...(turnUrl && turnUsername && turnCredential
-      ? [{ urls: turnUrl, username: turnUsername, credential: turnCredential }]
+    ...(staticTurnUrl && staticTurnUsername && staticTurnCredential
+      ? [{ urls: staticTurnUrl, username: staticTurnUsername, credential: staticTurnCredential }]
       : []),
   ],
   iceCandidatePoolSize: 10,
+};
+
+const getRtcConfig = async (): Promise<RTCConfiguration> => {
+  try {
+    const response = await fetch('/api/webrtc/ice-servers');
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+        return { ...BASE_RTC_CONFIG, iceServers: data.iceServers };
+      }
+    }
+  } catch (error) {
+    console.warn('[WebRTC] Could not load TURN credentials:', error);
+  }
+  return BASE_RTC_CONFIG;
 };
 
 const attachRemoteStream = (
@@ -1016,7 +1031,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const initialCameraOff = type === 'voice' || !hasVideo;
         setIsCameraOff(initialCameraOff);
 
-        const pc = new RTCPeerConnection(RTC_CONFIG);
+        const pc = new RTCPeerConnection(await getRtcConfig());
         peerConnectionRef.current = pc;
 
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -1150,7 +1165,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const initialCameraOff = call.callType === 'voice' || !hasVideo;
       setIsCameraOff(initialCameraOff);
 
-      const pc = new RTCPeerConnection(RTC_CONFIG);
+      const pc = new RTCPeerConnection(await getRtcConfig());
       peerConnectionRef.current = pc;
 
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
