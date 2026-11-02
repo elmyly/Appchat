@@ -70,7 +70,7 @@ app.post('/api/ai/elara/reply', async (req, res) => {
     const prompt = `${elaraPersonality.value}\n\nUser ${user.displayName} says:\n${message}\n\nReply as Elara:`;
     const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`, {
       headers: { Accept: 'text/plain' },
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) throw new Error(`Pollinations ${response.status}: ${await response.text()}`);
     const reply = await response.text();
@@ -1277,7 +1277,7 @@ io.on('connection', (socket) => {
     const newMessage: Message = {
       id: messageId,
       conversationId,
-      senderId: authenticatedUserId,
+      senderId: sender.id,
       senderUsername: sender.username,
       senderDisplayName: sender.displayName,
       senderAvatar: sender.avatar,
