@@ -19,8 +19,10 @@ export const userMatches: Map<string, Map<string, DatingMatch>> = new Map(); // 
 export const userSwipeHistory: Map<string, { targetUserId: string; action: 'like' | 'pass' | 'superlike' }[]> = new Map();
 export const customUserProfiles: Map<string, DatingProfile> = new Map(); // userId -> custom dating profile
 
-// Initial seed profiles
-const SEED_PROFILES: DatingProfile[] = [
+// Production starts with an empty discovery pool. Users create their own
+// dating profiles after registering; no demo accounts are injected.
+const SEED_PROFILES: DatingProfile[] = [];
+/*
   {
     id: 'date_elena',
     userId: 'user_elena_d',
@@ -183,11 +185,7 @@ const SEED_PROFILES: DatingProfile[] = [
     isVerified: true,
   },
 ];
-
-// Initialize seed profiles
-for (const p of SEED_PROFILES) {
-  datingProfiles.set(p.id, p);
-}
+*/
 
 export function setupDatingRoutes(
   app: express.Express,
@@ -195,26 +193,6 @@ export function setupDatingRoutes(
   context: DatingRoutesContext
 ) {
   const { users, conversations, messages, getAuthUser } = context;
-
-  // Ensure matching users exist in users map so messenger works seamlessly
-  for (const p of SEED_PROFILES) {
-    if (!users.has(p.userId)) {
-      users.set(p.userId, {
-        id: p.userId,
-        username: p.username,
-        email: `${p.username}@aura.net`,
-        displayName: p.displayName,
-        bio: p.bio,
-        avatar: p.photos[0],
-        statusMessage: `Available on Aura Meet ✨`,
-        publicKeyFingerprint: crypto.createHash('sha256').update(p.username).digest('hex').slice(0, 16).toUpperCase(),
-        createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30,
-        lastSeen: null, // Online
-        followers: [],
-        following: [],
-      });
-    }
-  }
 
   // Helper to ensure user maps exist
   const ensureUserDatingState = (userId: string) => {
