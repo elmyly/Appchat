@@ -245,7 +245,7 @@ const MainAppContent: React.FC = () => {
       ) : (
         /* --- UNIFIED PLATFORM LAYOUT --- */
         /* h-screen + overflow-hidden prevents page-level scrolling so sidebars stay stationary */
-        <div className="h-screen w-screen flex bg-white text-slate-900 overflow-hidden font-sans">
+        <div className="h-[100dvh] min-h-[100dvh] w-full flex bg-white text-slate-900 overflow-hidden font-sans">
           {/* Column 1: Desktop Left Navigation Sidebar (Stationary & Sticky) */}
           <AppSidebar
             onOpenCreatePost={() => setShowCreatePostModal(true)}
@@ -255,7 +255,7 @@ const MainAppContent: React.FC = () => {
           {/* Column 2: Center Content Area (Independently Scrolls) */}
           {currentTab === 'messages' ? (
             /* Merged Messenger: Fills remaining window space inside platform */
-            <main className="flex-1 h-screen flex bg-white overflow-hidden">
+            <main className="flex-1 min-w-0 min-h-0 h-full flex bg-white overflow-hidden">
               <MessagesView
                 onOpenNewChat={() => setShowNewChatModal(true)}
                 onOpenGroupModal={() => setShowGroupModal(true)}
@@ -264,7 +264,7 @@ const MainAppContent: React.FC = () => {
             </main>
           ) : (
             /* Social Views: Independently scrollable, sidebars remain locked */
-            <main className="flex-1 h-screen flex justify-center bg-white border-r border-slate-100 overflow-y-auto custom-scrollbar">
+            <main className="flex-1 min-w-0 min-h-0 h-full flex justify-center bg-white border-r border-slate-100 overflow-y-auto custom-scrollbar pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0">
               {currentTab === 'feed' && (
                 <FeedView
                   onOpenReport={(type, id) =>
