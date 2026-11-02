@@ -703,6 +703,31 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       fileMeta,
     });
 
+    // Elara receives only the plaintext sent in her private conversation.
+    // Normal conversations remain end-to-end encrypted and never reach Gemini.
+    const talksToElara = activeConversation.participantIds.includes('user_elara');
+    if (talksToElara && type === 'text' && text.trim() && !text.startsWith('[Elara]')) {
+      try {
+        const aiResponse = await fetch('/api/ai/elara/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: text }),
+        });
+        if (aiResponse.ok) {
+          const { reply } = await aiResponse.json();
+          const encryptedReply = await encryptMessage(reply, activeConversation.id);
+          socket.emit('message:send', {
+            conversationId: activeConversation.id,
+            ...encryptedReply,
+            type: 'text',
+            aiReplyFor: 'user_elara',
+          });
+        }
+      } catch (error) {
+        console.error('[Elara] Failed to generate reply:', error);
+      }
+    }
+
     // Stop typing immediately when sending
     setTyping(false);
   };
