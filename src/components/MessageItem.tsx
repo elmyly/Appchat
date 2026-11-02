@@ -110,7 +110,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   return (
     <div
       className={`group relative flex w-full gap-2.5 my-2.5 px-2 transition-all ${
-        isMine ? 'flex-row-reverse justify-end' : 'flex-row justify-start'
+        isMine ? 'flex-row-reverse justify-start' : 'flex-row justify-start'
       }`}
       onMouseLeave={() => setShowExtendedPicker(false)}
     >
