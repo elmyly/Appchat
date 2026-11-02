@@ -94,6 +94,15 @@ app.post('/api/ai/elara/reply', async (req, res) => {
   }
 });
 
+app.post('/api/ai/elara/image', (req, res) => {
+  const user = getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Authentication required' });
+  const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
+  if (!prompt) return res.status(400).json({ error: 'Image prompt is required' });
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+  return res.json({ imageUrl });
+});
+
 // Generate short-lived Cloudflare TURN credentials on the server. The TURN
 // API token must never be exposed to the browser or stored in a VITE_* value.
 app.get('/api/webrtc/ice-servers', async (_req, res) => {
