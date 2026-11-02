@@ -361,7 +361,6 @@ app.post('/api/auth/register-request', async (req, res) => {
       ? `Verification code dispatched to ${cleanEmail}`
       : `Verification code generated for ${cleanEmail}`,
     emailSent: emailResult.sent,
-    devOtp: otp, // Provided for instant preview testing and auto-fill helper
   });
 });
 
@@ -460,7 +459,6 @@ app.post('/api/auth/resend-registration-otp', async (req, res) => {
   return res.json({
     success: true,
     message: emailResult.sent ? `A new code was dispatched to ${cleanEmail}` : 'A new code was generated',
-    devOtp: newOtp,
     emailSent: emailResult.sent,
   });
 });
