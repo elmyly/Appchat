@@ -245,7 +245,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-slate-100/70 overflow-hidden relative">
+    <div className="flex-1 h-full min-h-0 min-w-0 flex flex-col bg-slate-100/70 overflow-hidden relative">
       {/* Security Verification Modal */}
       {showSecurityModal && (
         <SecurityModal
@@ -670,9 +670,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       )}
 
       {/* Main Content Area (Messages + optional Group Info Drawer) */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
         {/* Messages Scroll Thread */}
-        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 space-y-1 custom-scrollbar">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-contain px-2 sm:px-4 py-3 sm:py-4 space-y-1 custom-scrollbar">
           {/* Encryption Intro Card */}
           <div className="flex flex-col items-center justify-center my-4 text-center">
             <div className="p-2.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 mb-2 shadow-xs">
