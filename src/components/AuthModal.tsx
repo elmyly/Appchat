@@ -55,7 +55,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // OTP Verification states
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [otpTimer, setOtpTimer] = useState(60);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
@@ -137,7 +136,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       setIsSubmitting(false);
       if (res.success) {
-        setDevOtp(res.devOtp || '');
         setEmailSent(!!res.emailSent);
         setOtp('');
         setOtpTimer(60);
@@ -170,7 +168,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsSubmitting(false);
 
     if (res.success) {
-      if (res.devOtp) setDevOtp(res.devOtp);
       setOtpTimer(60);
       setResendStatus('A fresh verification code has been dispatched.');
       setTimeout(() => setResendStatus(null), 4000);
@@ -275,26 +272,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 We sent a 6-digit verification code to <strong className="text-slate-800">{email}</strong> to ensure your email is valid.
               </p>
             </div>
-
-            {/* Instant Demo Auto-Fill Banner */}
-            {devOtp && (
-              <div className="p-3 bg-indigo-50/80 border border-indigo-200/90 rounded-2xl flex items-center justify-between text-xs text-indigo-950 shadow-2xs animate-in zoom-in-95">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#5036FF] shrink-0" />
-                  <div>
-                    <span className="block text-[11px] text-slate-500 font-medium">Demo Preview Code</span>
-                    <span className="font-mono text-sm font-bold text-[#5036FF] tracking-wider">{devOtp}</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOtp(devOtp)}
-                  className="px-3 py-1.5 bg-[#5036FF] text-white font-bold rounded-xl hover:bg-[#432bdb] transition-colors cursor-pointer text-xs shadow-xs"
-                >
-                  Auto-fill
-                </button>
-              </div>
-            )}
 
             {/* 6-Digit OTP Input */}
             <div>
