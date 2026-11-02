@@ -707,6 +707,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Normal conversations remain end-to-end encrypted and never reach Gemini.
     const talksToElara = activeConversation.participantIds.includes('user_elara');
     if (talksToElara && type === 'text' && text.trim() && !text.startsWith('[Elara]')) {
+      const elaraTyping = {
+        userId: 'user_elara',
+        username: 'elara',
+        displayName: 'Elara',
+        avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=elara',
+        isTyping: true,
+      };
+      setTypingUsers((current) => [...current.filter((item) => item.userId !== 'user_elara'), elaraTyping]);
       try {
         const aiResponse = await fetch('/api/ai/elara/reply', {
           method: 'POST',
@@ -725,6 +733,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       } catch (error) {
         console.error('[Elara] Failed to generate reply:', error);
+      } finally {
+        setTypingUsers((current) => current.filter((item) => item.userId !== 'user_elara'));
       }
     }
 
