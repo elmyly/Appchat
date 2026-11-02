@@ -23,6 +23,7 @@ import {
   UserX,
   ChevronRight,
   Filter,
+  Sparkles,
 } from 'lucide-react';
 
 interface AdminStats {
@@ -54,6 +55,8 @@ interface AdminUserSummary {
 export const AdminView: React.FC = () => {
   const { user: currentAuthUser, token } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'verifications' | 'users' | 'reports'>('verifications');
+  const [elaraPersonality, setElaraPersonality] = useState('You are Elara, a warm, helpful, concise AI companion in Aura.');
+  const [elaraSaving, setElaraSaving] = useState(false);
 
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -86,6 +89,19 @@ export const AdminView: React.FC = () => {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setFeedbackToast({ message, type });
     setTimeout(() => setFeedbackToast(null), 3500);
+  };
+
+  const saveElaraPersonality = async () => {
+    if (!token || !elaraPersonality.trim()) return;
+    setElaraSaving(true);
+    try {
+      const res = await fetch('/api/ai/elara/personality', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ personality: elaraPersonality }),
+      });
+      if (res.ok) showToast('Elara personality updated');
+      else showToast('Could not update Elara personality', 'error');
+    } finally { setElaraSaving(false); }
   };
 
   const fetchAdminData = async () => {
@@ -456,6 +472,14 @@ export const AdminView: React.FC = () => {
           className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer self-start sm:self-auto min-h-[44px] flex items-center justify-center"
         >
           Refresh Data
+        </button>
+
+        <button
+          onClick={() => setActiveTab('overview')}
+          className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 min-h-[44px] text-slate-600 hover:bg-slate-100"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Elara AI</span>
         </button>
       </div>
 
@@ -995,6 +1019,23 @@ export const AdminView: React.FC = () => {
       {/* --- TAB 4: OVERVIEW & BROADCAST --- */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          <section className="p-5 bg-violet-50 border border-violet-200 rounded-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-violet-600" />
+              <h2 className="text-sm font-bold text-slate-900">Elara AI Personality</h2>
+            </div>
+            <p className="text-xs text-slate-600 mb-3">Control how @elara responds in private AI conversations.</p>
+            <textarea
+              value={elaraPersonality}
+              onChange={(e) => setElaraPersonality(e.target.value)}
+              className="w-full min-h-28 p-3 rounded-xl border border-violet-200 bg-white text-sm text-slate-800 outline-none focus:border-violet-500 resize-y"
+              maxLength={4000}
+            />
+            <button onClick={saveElaraPersonality} disabled={elaraSaving} className="mt-3 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold disabled:opacity-60">
+              {elaraSaving ? 'Saving…' : 'Save personality'}
+            </button>
+          </section>
+
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
