@@ -109,7 +109,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <div
-      className={`group relative flex w-full gap-2.5 my-2.5 px-2 transition-all ${
+      className={`group relative flex w-full gap-2.5 my-2.5 px-2 pb-5 transition-all ${
         isMine ? 'flex-row-reverse justify-start' : 'flex-row justify-start'
       }`}
       onMouseLeave={() => setShowExtendedPicker(false)}
@@ -595,10 +595,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         )}
       </div>
 
-      {/* Touch/Mobile reaction, forward, and pin buttons beside bubble */}
+      {/* Touch/Mobile reaction, forward, and pin buttons below the message */}
       <div
-        className={`self-center flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${
-          isMine ? 'order-first mr-1' : 'ml-1'
+        className={`absolute top-full mt-0.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-20 ${
+          isMine ? 'right-2' : 'left-10'
         }`}
       >
         <button
